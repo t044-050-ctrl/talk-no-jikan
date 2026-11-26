@@ -1,0 +1,3991 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トークの じかん - しょうがっこう こくご はなしあい</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Zen Maru Gothic & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans JP"', 'sans-serif'],
+            maru: ['"Zen Maru Gothic"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --grade-bg: #F8FAFC;
+      --grade-border: #CBD5E1;
+      --grade-accent: #0284C7;
+      --grade-text: #1E293B;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #1e293b;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    /* 16:9 固定比率ステージ */
+    #app-stage {
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      aspect-ratio: 16 / 9;
+      background-color: var(--grade-bg);
+      color: var(--grade-text);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.3s ease;
+    }
+
+    /* カスタムスクロールバー */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.38);
+    }
+
+    /* 原稿用紙（20字×行数） */
+    .genkou-grid {
+      display: grid;
+      grid-template-columns: repeat(20, minmax(0, 1fr));
+      border-top: 2.5px solid #dc2626;
+      border-left: 2.5px solid #dc2626;
+      background-color: #fffdf9;
+    }
+    .genkou-cell {
+      aspect-ratio: 1 / 1;
+      border-right: 1px solid #f87171;
+      border-bottom: 1px solid #f87171;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+      font-weight: 800;
+      color: #0f172a;
+      user-select: none;
+      line-height: 1;
+      position: relative;
+      cursor: text;
+    }
+    .genkou-cell.row-sep {
+      border-bottom: 2.5px solid #dc2626;
+    }
+
+    /* 赤い縦線点滅カーソル（マスの背景色は変えない） */
+    @keyframes caretBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    .caret-bar {
+      position: absolute;
+      left: 3px;
+      top: 14%;
+      bottom: 14%;
+      width: 2.5px;
+      background-color: #dc2626;
+      border-radius: 2px;
+      animation: caretBlink 1s infinite;
+      pointer-events: none;
+    }
+    .caret-bar-end {
+      position: absolute;
+      right: 3px;
+      top: 14%;
+      bottom: 14%;
+      width: 2.5px;
+      background-color: #dc2626;
+      border-radius: 2px;
+      animation: caretBlink 1s infinite;
+      pointer-events: none;
+    }
+
+    /* かなパネルキー */
+    .kana-key {
+      user-select: none;
+      touch-action: none;
+      transition: transform 0.08s ease, background-color 0.1s ease;
+    }
+    .kana-key:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.985) translateY(4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop {
+      animation: popIn 0.18s ease-out forwards;
+    }
+
+    /* A4専用印刷レイアウト */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+      body {
+        background: #ffffff !important;
+        overflow: visible !important;
+        width: auto !important;
+        height: auto !important;
+        display: block !important;
+      }
+      #app-stage {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: auto !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        overflow: visible !important;
+      }
+      #page-top,
+      #page-themes,
+      #page-workspace,
+      .no-print {
+        display: none !important;
+      }
+      #summary-modal {
+        position: static !important;
+        display: block !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        inset: auto !important;
+      }
+      #summary-modal-card {
+        box-shadow: none !important;
+        border: 2px solid #94a3b8 !important;
+        border-radius: 12px !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        width: 100% !important;
+      }
+      #summary-modal-body {
+        overflow: visible !important;
+        padding: 14px !important;
+      }
+      .print-genkou-cell {
+        font-size: 11px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 16:9 メインステージ -->
+  <div id="app-stage">
+
+    <!-- ======================================================== -->
+    <!-- 1ページ目：トップページ（全学年が見るため未習漢字を使わない表記） -->
+    <!-- ======================================================== -->
+    <section id="page-top" class="w-full h-full flex flex-col justify-between p-[2.4%] bg-gradient-to-br from-amber-50 via-white to-sky-50">
+      <header class="text-center pt-[0.5%]">
+        <div class="inline-flex items-center gap-2 bg-amber-100 border border-amber-300 text-amber-900 px-4 py-1 rounded-full text-[clamp(11px,1.1vw,15px)] font-bold mb-1.5 shadow-2xs">
+          <span>🏫 しょうがっこう こくご はなしあい アプリ</span>
+        </div>
+        <h1 class="font-maru font-black text-[clamp(28px,4.2vw,56px)] tracking-wider text-slate-800 leading-tight">
+          トークの じかん
+        </h1>
+        <p class="text-[clamp(12px,1.35vw,18px)] text-slate-600 font-bold mt-1">
+          じぶんの かんがえを まとめて、友だちと たのしく はなしあいを しよう！ がくねんを えらんでね。
+        </p>
+      </header>
+
+      <!-- 1年生〜6年生ボタン（6学年カラー） -->
+      <div class="grid grid-cols-3 gap-[2%] flex-grow my-[2%] px-[3%]">
+        <!-- 1年：薄いピンク (#fce7f3) -->
+        <button onclick="selectGrade(1)" class="group rounded-3xl p-[5%] flex flex-col justify-between text-left border-4 transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          style="background-color: #fce7f3; border-color: #fbcfe8;">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-white font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: #db2777;">
+              1ねん
+            </span>
+            <span class="text-[clamp(22px,2.8vw,38px)]">🌸</span>
+          </div>
+          <div>
+            <div class="font-maru font-black text-[clamp(24px,3.2vw,44px)] leading-none" style="color: #831843;">
+              1年生
+            </div>
+            <p class="text-[clamp(11px,1.15vw,15px)] font-bold mt-1.5" style="color: #9d174d;">
+              みぢかな ことから はなそう！（10こ）
+            </p>
+          </div>
+        </button>
+
+        <!-- 2年：薄いオレンジ (#ffedd5) -->
+        <button onclick="selectGrade(2)" class="group rounded-3xl p-[5%] flex flex-col justify-between text-left border-4 transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          style="background-color: #ffedd5; border-color: #fed7aa;">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-white font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: #ea580c;">
+              2ねん
+            </span>
+            <span class="text-[clamp(22px,2.8vw,38px)]">🍊</span>
+          </div>
+          <div>
+            <div class="font-maru font-black text-[clamp(24px,3.2vw,44px)] leading-none" style="color: #7c2d12;">
+              2年生
+            </div>
+            <p class="text-[clamp(11px,1.15vw,15px)] font-bold mt-1.5" style="color: #9a3412;">
+              りゆうを つけて はなそう！（10こ）
+            </p>
+          </div>
+        </button>
+
+        <!-- 3年：薄い黄色 (#fef9c3) -->
+        <button onclick="selectGrade(3)" class="group rounded-3xl p-[5%] flex flex-col justify-between text-left border-4 transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          style="background-color: #fef9c3; border-color: #fef08a;">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-white font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: #ca8a04;">
+              3ねん
+            </span>
+            <span class="text-[clamp(22px,2.8vw,38px)]">🌻</span>
+          </div>
+          <div>
+            <div class="font-maru font-black text-[clamp(24px,3.2vw,44px)] leading-none" style="color: #713f12;">
+              3年生
+            </div>
+            <p class="text-[clamp(11px,1.15vw,15px)] font-bold mt-1.5" style="color: #854d0e;">
+              ちがいを くらべて はなそう！（10こ）
+            </p>
+          </div>
+        </button>
+
+        <!-- 4年：薄い黄緑 (#ecfccb) -->
+        <button onclick="selectGrade(4)" class="group rounded-3xl p-[5%] flex flex-col justify-between text-left border-4 transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          style="background-color: #ecfccb; border-color: #d9f99d;">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-white font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: #65a30d;">
+              4ねん
+            </span>
+            <span class="text-[clamp(22px,2.8vw,38px)]">🍀</span>
+          </div>
+          <div>
+            <div class="font-maru font-black text-[clamp(24px,3.2vw,44px)] leading-none" style="color: #365314;">
+              4年生
+            </div>
+            <p class="text-[clamp(11px,1.15vw,15px)] font-bold mt-1.5" style="color: #3f6212;">
+              あいての かんがえも きこう！（10こ）
+            </p>
+          </div>
+        </button>
+
+        <!-- 5年：薄い水色 (#e0f2fe) -->
+        <button onclick="selectGrade(5)" class="group rounded-3xl p-[5%] flex flex-col justify-between text-left border-4 transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          style="background-color: #e0f2fe; border-color: #bae6fd;">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-white font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: #0284c7;">
+              5ねん
+            </span>
+            <span class="text-[clamp(22px,2.8vw,38px)]">🐬</span>
+          </div>
+          <div>
+            <div class="font-maru font-black text-[clamp(24px,3.2vw,44px)] leading-none" style="color: #0c4a6e;">
+              5年生
+            </div>
+            <p class="text-[clamp(11px,1.15vw,15px)] font-bold mt-1.5" style="color: #075985;">
+              たちばを はっきり させて はなそう！（10こ）
+            </p>
+          </div>
+        </button>
+
+        <!-- 6年：薄い紫色 (#f3e8ff) -->
+        <button onclick="selectGrade(6)" class="group rounded-3xl p-[5%] flex flex-col justify-between text-left border-4 transition-all hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer"
+          style="background-color: #f3e8ff; border-color: #e9d5ff;">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-white font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: #9333ea;">
+              6ねん
+            </span>
+            <span class="text-[clamp(22px,2.8vw,38px)]">🍇</span>
+          </div>
+          <div>
+            <div class="font-maru font-black text-[clamp(24px,3.2vw,44px)] leading-none" style="color: #581c87;">
+              6年生
+            </div>
+            <p class="text-[clamp(11px,1.15vw,15px)] font-bold mt-1.5" style="color: #6b21a8;">
+              いろいろな みかたで はなそう！（10こ）
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <footer class="text-center text-[clamp(10px,1vw,13px)] text-slate-500 font-bold">
+        ※ じぶんの さくぶんから「よそうされる はんろん」や「ほんばんの アドバイス」が じどうで でます。
+      </footer>
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- 2ページ目：学年別トークテーマ選択ページ（10個）             -->
+    <!-- ======================================================== -->
+    <section id="page-themes" class="hidden w-full h-full flex flex-col p-[2%]">
+      <header class="flex items-center justify-between bg-white/95 rounded-2xl px-[2%] py-[1.2%] shadow-xs border-2 mb-[1.5%]" style="border-color: var(--grade-border);">
+        <div class="flex items-center gap-3">
+          <button onclick="showPage('page-top')" id="btn-back-top" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.15vw,15px)] transition-colors cursor-pointer">
+            ← 学年を えらぶ
+          </button>
+          <span id="themes-grade-badge" class="px-4 py-1 rounded-full text-white font-maru font-black text-[clamp(13px,1.4vw,19px)]" style="background-color: var(--grade-accent);">
+            1年生
+          </span>
+          <h2 id="themes-page-title" class="font-maru font-bold text-[clamp(14px,1.6vw,22px)] text-slate-800">
+            トークテーマを えらぼう！（10こ）
+          </h2>
+        </div>
+
+        <button onclick="pickRandomTheme()" class="px-4 py-1.5 rounded-xl text-white font-bold text-[clamp(11px,1.15vw,15px)] shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5" style="background-color: var(--grade-accent);">
+          <span>🎲</span>
+          <span id="random-btn-label">ランダムで えらぶ</span>
+        </button>
+      </header>
+
+      <!-- 10個のトークテーマグリッド（2列×5行） -->
+      <div id="themes-grid" class="grid grid-cols-2 grid-rows-5 gap-[1.3%] flex-grow min-h-0">
+        <!-- JSで動的生成 -->
+      </div>
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- 3ページ目：話合いワークスペース（①〜⑥）                  -->
+    <!-- ======================================================== -->
+    <section id="page-workspace" class="hidden w-full h-full flex flex-col p-[1.5%]">
+      <!-- 上部ヘッダー -->
+      <header class="flex items-center justify-between bg-white rounded-2xl px-[1.6%] py-[0.9%] shadow-xs border-2 mb-[1%] gap-3" style="border-color: var(--grade-border);">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <button onclick="showPage('page-themes')" id="ws-back-themes-btn" class="flex-shrink-0 px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.05vw,14px)] transition-colors cursor-pointer">
+            ← テーマいちらん
+          </button>
+          <span id="ws-grade-badge" class="flex-shrink-0 px-3 py-0.5 rounded-full text-white font-maru font-bold text-[clamp(11px,1.1vw,14px)]" style="background-color: var(--grade-accent);">
+            1年生
+          </span>
+          <h2 id="ws-theme-title" class="font-maru font-black text-[clamp(13px,1.4vw,19px)] text-slate-800 truncate">
+            テーマタイトル
+          </h2>
+        </div>
+
+        <div class="flex-shrink-0 flex items-center gap-2 max-w-[44%]">
+          <span class="text-[clamp(10px,1vw,13px)] font-bold text-slate-500 flex-shrink-0" id="ws-stance-caption">いまの かんがえ：</span>
+          <span id="ws-stance-badge" class="px-3 py-0.5 rounded-full font-bold text-[clamp(10px,1.05vw,13px)] bg-slate-200 text-slate-700 truncate">
+            まだ えらんで いません
+          </span>
+        </div>
+      </header>
+
+      <!-- ①〜⑥ ステップ切り替えタブ -->
+      <nav class="grid grid-cols-6 gap-[0.8%] mb-[1%]">
+        <button onclick="switchStep(1)" id="tab-step-1" class="step-tab rounded-xl py-[1.1%] px-1.5 font-maru font-bold text-[clamp(10px,1.02vw,14px)] border-2 transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs">
+          <span>①</span><span id="tab-label-1" class="truncate">テーマ</span>
+        </button>
+        <button onclick="switchStep(2)" id="tab-step-2" class="step-tab rounded-xl py-[1.1%] px-1.5 font-maru font-bold text-[clamp(10px,1.02vw,14px)] border-2 transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs">
+          <span>②</span><span id="tab-label-2" class="truncate">いけんのれい</span>
+        </button>
+        <button onclick="switchStep(3)" id="tab-step-3" class="step-tab rounded-xl py-[1.1%] px-1.5 font-maru font-bold text-[clamp(10px,1.02vw,14px)] border-2 transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs">
+          <span>③</span><span id="tab-label-3" class="truncate">さくぶんようし</span>
+        </button>
+        <button onclick="switchStep(4)" id="tab-step-4" class="step-tab rounded-xl py-[1.1%] px-1.5 font-maru font-bold text-[clamp(10px,1.02vw,14px)] border-2 transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs">
+          <span>④</span><span id="tab-label-4" class="truncate">はんろん</span>
+        </button>
+        <button onclick="switchStep(5)" id="tab-step-5" class="step-tab rounded-xl py-[1.1%] px-1.5 font-maru font-bold text-[clamp(10px,1.02vw,14px)] border-2 transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs">
+          <span>⑤</span><span id="tab-label-5" class="truncate">ほんばん</span>
+        </button>
+        <button onclick="switchStep(6)" id="tab-step-6" class="step-tab rounded-xl py-[1.1%] px-1.5 font-maru font-bold text-[clamp(10px,1.02vw,14px)] border-2 transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs">
+          <span>⑥</span><span id="tab-label-6" class="truncate">ふりかえり</span>
+        </button>
+      </nav>
+
+      <!-- メインコンテンツエリア -->
+      <div class="flex-grow min-h-0 bg-white rounded-2xl border-2 shadow-sm p-[1.8%] flex flex-col overflow-hidden relative" style="border-color: var(--grade-border);">
+
+        <!-- ================================================ -->
+        <!-- ① テーマ                                         -->
+        <!-- ================================================ -->
+        <div id="panel-step-1" class="step-panel animate-pop h-full flex flex-col justify-between">
+          <div class="bg-slate-50 rounded-2xl p-[2.2%] border-2 border-slate-200 flex-grow flex flex-col justify-center items-center text-center">
+            <span class="px-4 py-1 rounded-full text-white font-bold text-[clamp(11px,1.15vw,15px)] mb-2.5" style="background-color: var(--grade-accent);" id="s1-badge">
+              ① こんかいの トークテーマ
+            </span>
+            <h3 id="s1-theme-text" class="font-maru font-black text-[clamp(19px,2.6vw,36px)] text-slate-900 leading-snug max-w-4xl mb-2.5">
+              テーマ
+            </h3>
+            <p id="s1-theme-desc" class="text-[clamp(12px,1.25vw,17px)] text-slate-600 font-medium max-w-3xl leading-relaxed">
+              せつめい
+            </p>
+          </div>
+
+          <div class="mt-[1.5%] flex flex-col gap-3 bg-white pt-1">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <span class="font-maru font-bold text-[clamp(13px,1.35vw,18px)] text-slate-800" id="s1-choose-prompt">
+                まずは じぶんの かんがえに ちかい ほうを えらぼう：
+              </span>
+
+              <button onclick="switchStep(2)" class="px-6 py-2.5 rounded-xl text-white font-maru font-bold text-[clamp(13px,1.35vw,18px)] shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer flex items-center gap-2" style="background-color: var(--grade-accent);">
+                <span id="s1-next-btn">つぎへ（② れいを 見る）</span>
+                <span>→</span>
+              </button>
+            </div>
+
+            <!-- 具体的な2つの立場ボタン -->
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="setStance('A')" id="s1-btn-A" class="px-4 py-3 rounded-2xl font-maru font-black text-[clamp(13px,1.35vw,19px)] border-2 border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100 transition-all cursor-pointer flex items-center justify-center gap-2">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 text-white text-xs font-black flex-shrink-0">A</span>
+                <span class="label-stance-A leading-snug">立場A</span>
+              </button>
+              <button onclick="setStance('B')" id="s1-btn-B" class="px-4 py-3 rounded-2xl font-maru font-black text-[clamp(13px,1.35vw,19px)] border-2 border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 transition-all cursor-pointer flex items-center justify-center gap-2">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-black flex-shrink-0">B</span>
+                <span class="label-stance-B leading-snug">立場B</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ================================================ -->
+        <!-- ② いけんのれい（3〜4つずつ）                       -->
+        <!-- ================================================ -->
+        <div id="panel-step-2" class="step-panel hidden animate-pop h-full flex flex-col">
+          <div class="flex items-center justify-between mb-[1.2%]">
+            <h3 class="font-maru font-black text-[clamp(15px,1.65vw,22px)] text-slate-800" id="s2-heading">
+              ② 2つの かんがえの れいを 見よう
+            </h3>
+            <span class="text-[clamp(11px,1.1vw,14px)] text-slate-500 font-bold" id="s2-sub">
+              ※「ヒントにする」を おすと、さくぶんに 入ります
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-[2%] flex-grow min-h-0">
+            <!-- 立場Aの意見の例 -->
+            <div class="bg-rose-50/70 rounded-2xl border-2 border-rose-200 p-[2.2%] flex flex-col min-h-0">
+              <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-rose-200">
+                <span class="font-maru font-black text-[clamp(13px,1.35vw,18px)] text-rose-800 flex items-center gap-1.5 min-w-0">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-600 text-white text-xs font-black flex-shrink-0">A</span>
+                  <span id="s2-A-title" class="truncate">立場Aの れい</span>
+                </span>
+                <button onclick="chooseStanceAndGoStep3('A')" id="s2-choose-A-btn" class="flex-shrink-0 px-3 py-1 rounded-lg bg-rose-600 text-white font-bold text-[clamp(10px,1vw,13px)] hover:bg-rose-700 cursor-pointer">
+                  こちらで かく
+                </button>
+              </div>
+              <ul id="s2-A-list" class="space-y-2 overflow-y-auto custom-scroll pr-1 flex-grow">
+                <!-- JSで挿入 -->
+              </ul>
+            </div>
+
+            <!-- 立場Bの意見の例 -->
+            <div class="bg-blue-50/70 rounded-2xl border-2 border-blue-200 p-[2.2%] flex flex-col min-h-0">
+              <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-blue-200">
+                <span class="font-maru font-black text-[clamp(13px,1.35vw,18px)] text-blue-800 flex items-center gap-1.5 min-w-0">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-black flex-shrink-0">B</span>
+                  <span id="s2-B-title" class="truncate">立場Bの れい</span>
+                </span>
+                <button onclick="chooseStanceAndGoStep3('B')" id="s2-choose-B-btn" class="flex-shrink-0 px-3 py-1 rounded-lg bg-blue-600 text-white font-bold text-[clamp(10px,1vw,13px)] hover:bg-blue-700 cursor-pointer">
+                  こちらで かく
+                </button>
+              </div>
+              <ul id="s2-B-list" class="space-y-2 overflow-y-auto custom-scroll pr-1 flex-grow">
+                <!-- JSで挿入 -->
+              </ul>
+            </div>
+          </div>
+
+          <div class="mt-[1.2%] flex items-center justify-between">
+            <button onclick="switchStep(1)" id="s2-prev-btn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.15vw,15px)] cursor-pointer">
+              ← ① テーマに もどる
+            </button>
+            <button onclick="switchStep(3)" class="px-6 py-2.5 rounded-xl text-white font-maru font-bold text-[clamp(12px,1.3vw,17px)] shadow-md hover:opacity-95 cursor-pointer flex items-center gap-2" style="background-color: var(--grade-accent);">
+              <span id="s2-next-btn">つぎへ（③ さくぶんようし）</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+
+        <!-- ================================================ -->
+        <!-- ③ さくぶんようし（直接入力・200〜400字・かなパネル搭載） -->
+        <!-- ================================================ -->
+        <div id="panel-step-3" class="step-panel hidden animate-pop h-full flex flex-col">
+          <!-- 上部ツールバー（立場選択・文字数200/300/400・かきだし・けす・かなパネル開閉） -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 mb-[0.8%] pb-1.5 border-b border-slate-200">
+            <div class="flex items-center gap-1.5 min-w-0 max-w-[44%]">
+              <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 min-w-0">
+                <button onclick="setStance('A')" id="s3-stance-A" class="px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] transition-all cursor-pointer truncate max-w-[155px]">
+                  A：<span class="label-stance-A">立場A</span>
+                </button>
+                <button onclick="setStance('B')" id="s3-stance-B" class="px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] transition-all cursor-pointer truncate max-w-[155px]">
+                  B：<span class="label-stance-B">立場B</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <!-- かきだし・けす -->
+              <button onclick="insertStarterTemplate()" id="s3-template-btn" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[clamp(10px,0.92vw,12px)] border border-amber-300 cursor-pointer">
+                ✨ かきだしのかた
+              </button>
+              <button onclick="clearEssay()" id="s3-clear-btn" class="px-2 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-600 font-bold text-[clamp(10px,0.92vw,12px)] border border-slate-300 cursor-pointer">
+                けす
+              </button>
+
+              <!-- 文字数切替（200字 / 300字 / 400字） -->
+              <div class="inline-flex rounded-xl bg-slate-100 p-0.5 border border-slate-200">
+                <button onclick="setPaperSize(200)" id="size-btn-200" class="size-btn px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] cursor-pointer">200字</button>
+                <button onclick="setPaperSize(300)" id="size-btn-300" class="size-btn px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] cursor-pointer">300字</button>
+                <button onclick="setPaperSize(400)" id="size-btn-400" class="size-btn px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] cursor-pointer">400字</button>
+              </div>
+              <button onclick="increasePaperSize()" id="s3-increase-btn" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[clamp(10px,0.92vw,12px)] border border-amber-300 cursor-pointer">
+                ＋ふやす
+              </button>
+
+              <!-- かなパネル表示切り替えボタン -->
+              <button onclick="toggleKanaPanel()" id="kana-panel-toggle-btn" class="px-3 py-1 rounded-xl font-maru font-bold text-[clamp(10px,0.98vw,13px)] border-2 border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1 shadow-2xs">
+                <span>📱</span>
+                <span id="kana-panel-toggle-label">かなパネル</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 原稿用紙 ＋ かなパネル（左右切り替え・重なり防止レイアウト） -->
+          <div id="s3-main-body" class="flex-grow min-h-0 flex gap-[1.5%] overflow-hidden relative">
+            <!-- 原稿用紙エリア（パネル位置に応じて order を切り替え、重ならないように自動縮小） -->
+            <div id="s3-paper-wrapper" class="flex-grow min-w-0 flex flex-col bg-amber-50/45 rounded-2xl p-[1.4%] border-2 border-red-200 transition-all order-1">
+              <!-- 欄外上部の「なまえ」入力欄 ＋ マス情報 -->
+              <div class="flex items-center justify-between gap-2 mb-1.5 px-1">
+                <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-xl border-2 border-red-200 shadow-2xs">
+                  <label for="student-name-input" id="s3-name-label" class="font-maru font-black text-[clamp(11px,1.05vw,14px)] text-red-800 flex-shrink-0">
+                    なまえ：
+                  </label>
+                  <input type="text" id="student-name-input"
+                    onfocus="setInputTarget('name')"
+                    oninput="handleNameInput()"
+                    placeholder="ここを おして かく"
+                    class="w-36 sm:w-48 font-maru font-bold text-[clamp(12px,1.15vw,15px)] text-slate-900 bg-transparent focus:outline-none border-b border-dashed border-slate-300 focus:border-red-500" />
+                </div>
+
+                <div class="flex items-center gap-3 text-[clamp(10px,1vw,13px)] font-bold">
+                  <span id="s3-paper-note" class="text-red-700 hidden sm:inline">📝 マスを おして ちょくせつ かこう</span>
+                  <span id="char-count-display" class="text-slate-700 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200">いま 0 字 / 200 字</span>
+                  <span id="paper-grid-info" class="text-slate-500">20字 × 10ぎょう（200字）</span>
+                </div>
+              </div>
+
+              <!-- 原稿用紙グリッド（キーボード入力用の隠しinputも連動） -->
+              <div id="genkou-scroll-area" class="flex-grow overflow-y-auto custom-scroll pr-1 relative" onclick="focusGenkouEnd()">
+                <div id="genkou-container" class="genkou-grid w-full">
+                  <!-- JSで20字×10〜20行のマス目を生成 -->
+                </div>
+              </div>
+              <!-- PC物理キーボード・IME入力用テキストボックス（視覚外に配置） -->
+              <textarea id="hidden-ime-input" aria-hidden="true"
+                style="position:fixed; left:-9999px; top:0; width:1px; height:1px; opacity:0;"
+                oninput="handleHiddenImeInput(event)"
+                onkeydown="handleHiddenImeKeydown(event)"></textarea>
+            </div>
+
+            <!-- スマホ風12キー「かなパネル」（初期設定：右端 order-2、初期表示：閉じた状態/開閉ボタン対応） -->
+            <div id="kana-panel-box" class="hidden w-[34%] max-w-[330px] min-w-[240px] flex-shrink-0 bg-slate-100 rounded-2xl border-2 border-slate-300 p-2 flex flex-col justify-between shadow-md order-2">
+              <!-- パネル上部：左右位置切り替え ＆ 入力先表示 -->
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <div class="inline-flex rounded-lg bg-white p-0.5 border border-slate-300">
+                  <button onclick="setKanaPanelSide('left')" id="kana-side-left" class="px-2 py-0.5 rounded-md font-bold text-[11px] text-slate-600 cursor-pointer">
+                    ◀ ひだり
+                  </button>
+                  <button onclick="setKanaPanelSide('right')" id="kana-side-right" class="px-2 py-0.5 rounded-md font-bold text-[11px] bg-emerald-600 text-white cursor-pointer">
+                    みぎ ▶
+                  </button>
+                </div>
+                <span id="kana-target-indicator" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 truncate">
+                  さくぶんに 入力中
+                </span>
+              </div>
+
+              <!-- 学年別 漢字変換バー -->
+              <div class="bg-white rounded-xl border border-slate-300 px-2 py-1 mb-1.5 min-h-[34px] flex items-center gap-1 overflow-x-auto custom-scroll">
+                <span id="kanji-bar-label" class="text-[10px] font-bold text-slate-400 flex-shrink-0">へんかん：</span>
+                <div id="kanji-candidates-list" class="flex items-center gap-1">
+                  <span class="text-[11px] text-slate-400">ひらがなを うつと 出ます</span>
+                </div>
+              </div>
+
+              <!-- 12キー かなグリッド（トグル＆フリック両対応） -->
+              <div id="kana-keypad-grid" class="grid grid-cols-3 gap-1 flex-grow relative">
+                <!-- JSで12キー生成 -->
+              </div>
+
+              <!-- フリック方向ガイドポップアップ -->
+              <div id="flick-popup" class="hidden fixed z-50 pointer-events-none bg-slate-900/95 text-white rounded-2xl p-2 shadow-xl border border-slate-600 text-center" style="width: 126px;">
+                <div id="flick-up" class="text-xs font-bold text-amber-300 leading-tight">う</div>
+                <div class="flex items-center justify-between my-0.5 px-1">
+                  <span id="flick-left" class="text-xs font-bold text-sky-300">い</span>
+                  <span id="flick-center" class="text-base font-maru font-black bg-emerald-600 px-2 py-0.5 rounded-lg">あ</span>
+                  <span id="flick-right" class="text-xs font-bold text-sky-300">え</span>
+                </div>
+                <div id="flick-down" class="text-xs font-bold text-amber-300 leading-tight">お</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-[1%] flex items-center justify-between">
+            <button onclick="switchStep(2)" id="s3-prev-btn" class="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.15vw,15px)] cursor-pointer">
+              ← ② いけんのれいに もどる
+            </button>
+            <button onclick="analyzeAndGoToStep4()" class="px-6 py-2 rounded-xl text-white font-maru font-black text-[clamp(12px,1.3vw,17px)] shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer flex items-center gap-2" style="background-color: var(--grade-accent);">
+              <span id="s3-analyze-btn">かけたら「④ はんろん」を 見る！</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+
+        <!-- ================================================ -->
+        <!-- ④ はんろん（オフライン自動生成）                     -->
+        <!-- ================================================ -->
+        <div id="panel-step-4" class="step-panel hidden animate-pop h-full flex flex-col">
+          <div class="flex items-center justify-between mb-[1%]">
+            <div>
+              <h3 class="font-maru font-black text-[clamp(15px,1.65vw,22px)] text-slate-800" id="s4-heading">
+                ④ あなたの さくぶんに たいする はんろん
+              </h3>
+              <p class="text-[clamp(11px,1.05vw,14px)] text-slate-600 font-medium" id="s4-sub">
+                ちがう かんがえの 友だちが ききそうな ことです。こたえかたを かんがえて おこう！
+              </p>
+            </div>
+            <button onclick="generateCounterArguments()" id="s4-recheck-btn" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.05vw,14px)] border border-slate-300 cursor-pointer">
+              🔄 もういちど チェックする
+            </button>
+          </div>
+
+          <div class="grid grid-cols-12 gap-[2%] flex-grow min-h-0">
+            <!-- 左（4カラム）：自分の作文の確認 -->
+            <div class="col-span-4 bg-slate-50 rounded-2xl p-[3%] border border-slate-200 flex flex-col min-h-0">
+              <div class="flex items-center justify-between gap-1.5 mb-2">
+                <span class="font-maru font-bold text-[clamp(12px,1.2vw,15px)] text-slate-800 flex-shrink-0" id="s4-my-essay-label">📄 あなたの さくぶん</span>
+                <span id="s4-stance-tag" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 truncate">立場</span>
+              </div>
+              <div id="s4-essay-preview" class="flex-grow overflow-y-auto custom-scroll bg-white rounded-xl p-3 border border-slate-200 text-[clamp(11px,1.15vw,15px)] leading-relaxed text-slate-700 whitespace-pre-wrap">
+              </div>
+              <button onclick="switchStep(3)" id="s4-edit-btn" class="mt-2 w-full py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-[clamp(11px,1.05vw,14px)] border border-slate-300 cursor-pointer">
+                ✏️ さくぶんを かきなおす
+              </button>
+            </div>
+
+            <!-- 右（8カラム）：予想される反論カード -->
+            <div id="s4-rebuttals-container" class="col-span-8 space-y-2.5 overflow-y-auto custom-scroll pr-1">
+              <!-- JSで生成 -->
+            </div>
+          </div>
+
+          <div class="mt-[1.2%] flex items-center justify-between">
+            <button onclick="switchStep(3)" id="s4-prev-btn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.15vw,15px)] cursor-pointer">
+              ← ③ さくぶんようしに もどる
+            </button>
+            <button onclick="prepareStep5AndGo()" class="px-6 py-2.5 rounded-xl text-white font-maru font-bold text-[clamp(12px,1.3vw,17px)] shadow-md hover:opacity-95 cursor-pointer flex items-center gap-2" style="background-color: var(--grade-accent);">
+              <span id="s4-next-btn">つぎへ（⑤ ほんばんアドバイス）</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+
+        <!-- ================================================ -->
+        <!-- ⑤ ほんばん（1分・2分タイマー付）                   -->
+        <!-- ================================================ -->
+        <div id="panel-step-5" class="step-panel hidden animate-pop h-full flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-[1%]">
+            <div>
+              <h3 class="font-maru font-black text-[clamp(15px,1.65vw,22px)] text-slate-800" id="s5-heading">
+                ⑤ はなしあい ほんばんでの アドバイス
+              </h3>
+              <p class="text-[clamp(11px,1.05vw,14px)] text-slate-600 font-medium" id="s5-sub">
+                この じゅんばんで はなせば だいじょうぶ！ タイマーで れんしゅう しよう。
+              </p>
+            </div>
+
+            <!-- 1分・2分タイマー -->
+            <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+              <span class="text-sm">⏱️</span>
+              <div class="flex gap-1 mr-1">
+                <button onclick="setSpeechTimerPreset(60)" id="timer-preset-60" class="px-2.5 py-0.5 rounded-md bg-white text-slate-700 font-bold text-[clamp(10px,0.95vw,12px)] border border-slate-300 cursor-pointer">1分</button>
+                <button onclick="setSpeechTimerPreset(120)" id="timer-preset-120" class="px-2.5 py-0.5 rounded-md bg-white text-slate-700 font-bold text-[clamp(10px,0.95vw,12px)] border border-slate-300 cursor-pointer">2分</button>
+              </div>
+              <span id="speech-timer-display" class="font-maru font-black text-[clamp(13px,1.4vw,19px)] text-slate-800 w-14 text-center">01:00</span>
+              <button onclick="toggleSpeechTimer()" id="speech-timer-btn" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[clamp(10px,1vw,13px)] cursor-pointer">
+                スタート
+              </button>
+              <button onclick="resetSpeechTimer()" id="speech-timer-reset-btn" class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold text-[clamp(10px,1vw,13px)] border border-slate-300 cursor-pointer">
+                もどす
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-[1.8%] flex-grow min-h-0">
+            <!-- ステップ1：まずこれを言おう -->
+            <div class="bg-amber-50/80 rounded-2xl border-2 border-amber-300 p-[3%] flex flex-col justify-between">
+              <div>
+                <div class="inline-block px-3 py-1 rounded-full bg-amber-500 text-white font-maru font-black text-[clamp(11px,1.1vw,14px)] mb-2" id="s5-c1-badge">
+                  1. まず これを いおう！
+                </div>
+                <h4 class="font-maru font-bold text-[clamp(13px,1.35vw,18px)] text-amber-950 mb-2" id="s5-c1-title">
+                  じぶんの かんがえを はっきり いう
+                </h4>
+                <div id="s5-step1-script" class="bg-white rounded-xl p-3 border border-amber-200 text-[clamp(12px,1.2vw,16px)] font-bold text-slate-800 leading-relaxed shadow-2xs">
+                </div>
+              </div>
+              <div class="mt-2 text-[clamp(10px,1vw,13px)] text-amber-900 bg-amber-100/80 rounded-lg p-2 font-medium" id="s5-c1-tip">
+                💡 あいての 目を 見て、げんきよく はっきり いおう！
+              </div>
+            </div>
+
+            <!-- ステップ2：次にこれを言おう -->
+            <div class="bg-sky-50/80 rounded-2xl border-2 border-sky-300 p-[3%] flex flex-col justify-between">
+              <div>
+                <div class="inline-block px-3 py-1 rounded-full bg-sky-600 text-white font-maru font-black text-[clamp(11px,1.1vw,14px)] mb-2" id="s5-c2-badge">
+                  2. つぎに これを いおう！
+                </div>
+                <h4 class="font-maru font-bold text-[clamp(13px,1.35vw,18px)] text-sky-950 mb-2" id="s5-c2-title">
+                  なぜ そう おもうのか せつめいする
+                </h4>
+                <div id="s5-step2-script" class="bg-white rounded-xl p-3 border border-sky-200 text-[clamp(11px,1.15vw,15px)] font-bold text-slate-800 leading-relaxed shadow-2xs max-h-40 overflow-y-auto custom-scroll">
+                </div>
+              </div>
+              <div class="mt-2 text-[clamp(10px,1vw,13px)] text-sky-900 bg-sky-100/80 rounded-lg p-2 font-medium" id="s5-c2-tip">
+                💡 「りゆうは〜です」「たとえば〜」を つかうと つたわりやすいよ！
+              </div>
+            </div>
+
+            <!-- ステップ3：反論や質問がきたら -->
+            <div class="bg-emerald-50/80 rounded-2xl border-2 border-emerald-300 p-[3%] flex flex-col justify-between">
+              <div>
+                <div class="inline-block px-3 py-1 rounded-full bg-emerald-600 text-white font-maru font-black text-[clamp(11px,1.1vw,14px)] mb-2" id="s5-c3-badge">
+                  3. はんろんが きたら！
+                </div>
+                <h4 class="font-maru font-bold text-[clamp(13px,1.35vw,18px)] text-emerald-950 mb-2" id="s5-c3-title">
+                  うけとめてから こたえる
+                </h4>
+                <div id="s5-step3-script" class="bg-white rounded-xl p-3 border border-emerald-200 text-[clamp(11px,1.15vw,15px)] font-bold text-slate-800 leading-relaxed shadow-2xs max-h-40 overflow-y-auto custom-scroll">
+                </div>
+              </div>
+              <div class="mt-2 text-[clamp(10px,1vw,13px)] text-emerald-900 bg-emerald-100/80 rounded-lg p-2 font-medium" id="s5-c3-tip">
+                💡 まず「なるほど」と うなずいてから はなすと やさしい はなしあいに なるよ！
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-[1.2%] flex items-center justify-between">
+            <button onclick="switchStep(4)" id="s5-prev-btn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.15vw,15px)] cursor-pointer">
+              ← ④ はんろんに もどる
+            </button>
+            <button onclick="switchStep(6)" class="px-6 py-2.5 rounded-xl text-white font-maru font-bold text-[clamp(12px,1.3vw,17px)] shadow-md hover:opacity-95 cursor-pointer flex items-center gap-2" style="background-color: var(--grade-accent);">
+              <span id="s5-next-btn">つぎへ（⑥ ふりかえり）</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+
+        <!-- ================================================ -->
+        <!-- ⑥ ふりかえり（単体スクショなし・「まとめシートをほぞん」搭載） -->
+        <!-- ================================================ -->
+        <div id="panel-step-6" class="step-panel hidden animate-pop h-full flex flex-col">
+          <div class="flex items-center justify-between mb-[1%] gap-2">
+            <div class="min-w-0">
+              <h3 class="font-maru font-black text-[clamp(15px,1.65vw,22px)] text-slate-800" id="s6-heading">
+                ⑥ はなしあいの ふりかえり
+              </h3>
+              <p class="text-[clamp(11px,1.05vw,14px)] text-slate-600 font-medium truncate" id="s6-sub">
+                きょうの はなしあいを ふりかえって、チェックと かんそうを かこう！
+              </p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <!-- 名前表示バッジ（作文用紙の名前が自動反映） -->
+              <div class="flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200">
+                <span id="s6-name-caption" class="text-xs font-bold text-slate-500">なまえ：</span>
+                <span id="s6-name-display" class="font-maru font-black text-sm text-slate-800">（み入力）</span>
+              </div>
+              <!-- ふりかえり用 かなパネル表示切り替えボタン -->
+              <button onclick="toggleKanaPanel()" id="s6-kana-panel-toggle-btn" class="px-3 py-1.5 rounded-xl font-maru font-bold text-[clamp(10px,0.98vw,13px)] border-2 border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1 shadow-2xs">
+                <span>📱</span>
+                <span>かなパネル</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="s6-main-body" class="flex-grow min-h-0 flex gap-[1.5%] relative overflow-hidden">
+            <!-- メインの2カラム（左：めあてのチェック / 右：自由記述） -->
+            <div id="s6-content-grid" class="grid grid-cols-12 gap-[2%] flex-grow min-w-0 min-h-0 transition-all">
+              <!-- 左（6カラム）：4つのめあて自己評価（◎・○・△） -->
+              <div id="s6-criteria-card" class="col-span-6 bg-slate-50 rounded-2xl p-[2.5%] border border-slate-200 flex flex-col justify-between min-w-0">
+                <h4 class="font-maru font-bold text-[clamp(12px,1.2vw,16px)] text-slate-800 mb-1.5 truncate" id="s6-check-title">
+                  🌟 めあての チェック（あてはまる ものを えらぼう）
+                </h4>
+                <div id="reflection-criteria-list" class="space-y-2 flex-grow flex flex-col justify-center min-h-0">
+                  <!-- JSで4項目を生成 -->
+                </div>
+              </div>
+
+              <!-- 右（6カラム）：自由記述振り返り -->
+              <div id="s6-write-card" class="col-span-6 bg-slate-50 rounded-2xl p-[2.5%] border border-slate-200 flex flex-col justify-between min-w-0">
+                <div>
+                  <h4 class="font-maru font-bold text-[clamp(13px,1.3vw,17px)] text-slate-800 mb-1" id="s6-write-title">
+                    ✏️ はなしあいを おえて おもったこと
+                  </h4>
+                  <p class="text-[clamp(10px,1vw,13px)] text-slate-500 mb-2" id="s6-write-hint">
+                    （れい：〇〇さんの はなしが なるほどと おもいました。つぎは〜したいです。）
+                  </p>
+                </div>
+                <textarea id="reflection-textarea"
+                  onfocus="setInputTarget('reflection')"
+                  oninput="handleReflectionInput()"
+                  class="w-full flex-grow rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none p-3 text-[clamp(12px,1.2vw,16px)] leading-relaxed resize-none bg-white"></textarea>
+                
+                <div class="mt-2 flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 gap-1">
+                  <span class="text-[clamp(10px,1vw,13px)] font-bold text-slate-700 truncate" id="s6-change-label">かんがえは どうなった？</span>
+                  <div class="flex gap-1 flex-shrink-0">
+                    <button onclick="setThoughtChange('deep')" id="tc-btn-1" class="tc-btn px-2 py-1 rounded-lg text-[clamp(10px,0.9vw,12px)] font-bold border border-slate-300 bg-slate-50 cursor-pointer">かんがえが ふかまった</button>
+                    <button onclick="setThoughtChange('changed')" id="tc-btn-2" class="tc-btn px-2 py-1 rounded-lg text-[clamp(10px,0.9vw,12px)] font-bold border border-slate-300 bg-slate-50 cursor-pointer">かんがえが かわった</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ふりかえり用かなパネル配置スロット（右：横に並べて縮小 / 左：めあてのチェックの上に重ねる） -->
+            <div id="s6-kana-slot" class="hidden flex-shrink-0"></div>
+          </div>
+
+          <div class="mt-[1.2%] flex items-center justify-between">
+            <button onclick="switchStep(5)" id="s6-prev-btn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[clamp(11px,1.15vw,15px)] cursor-pointer">
+              ← ⑤ ほんばんに もどる
+            </button>
+            <div class="flex items-center gap-2">
+              <button onclick="showPage('page-themes')" id="s6-other-theme-btn" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[clamp(11px,1.15vw,15px)] cursor-pointer">
+                ほかの テーマを えらぶ
+              </button>
+              <button onclick="saveAndOpenSummarySheet()" id="s6-save-summary-btn" class="px-6 py-2.5 rounded-xl text-white font-maru font-black text-[clamp(12px,1.3vw,17px)] shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer flex items-center gap-2" style="background-color: var(--grade-accent);">
+                <span>📸</span>
+                <span id="s6-finish-btn">まとめシートを ほぞん</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================== -->
+    <!-- 学習まとめシートモーダル（コピーボタンなし・画像保存＆A4印刷） -->
+    <!-- ======================================================== -->
+    <div id="summary-modal" class="hidden absolute inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center p-[2.5%]">
+      <div id="summary-modal-card" class="bg-white rounded-3xl w-full max-w-5xl max-h-full flex flex-col shadow-2xl border-4 overflow-hidden animate-pop" style="border-color: var(--grade-accent);">
+        <div class="no-print px-5 py-3 text-white flex items-center justify-between" style="background-color: var(--grade-accent);">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🎓</span>
+            <h3 class="font-maru font-black text-lg sm:text-xl" id="modal-title">トークの じかん まとめシート</h3>
+            <span id="save-toast-badge" class="ml-2 px-3 py-0.5 rounded-full bg-white/25 text-white text-xs font-bold">
+              ✅ がぞうを ほぞんしました！
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadSummaryPng()" id="save-png-again-btn" class="px-3.5 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm cursor-pointer">
+              📷 がぞうほぞん
+            </button>
+            <button onclick="window.print()" id="print-summary-btn" class="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs sm:text-sm shadow-2xs cursor-pointer">
+              🖨️ いんさつする
+            </button>
+            <button onclick="closeSummaryModal()" id="modal-close-btn" class="px-3.5 py-1.5 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 text-white font-bold text-xs sm:text-sm cursor-pointer">
+              とじる
+            </button>
+          </div>
+        </div>
+
+        <!-- 印刷対象になるまとめシート用紙本体 -->
+        <div id="summary-modal-body" class="p-5 overflow-y-auto custom-scroll space-y-3 text-slate-800 flex-grow bg-white">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- アプリケーションロジック -->
+  <script>
+    // =========================================================================
+    // 1. 学年別カラー・UI文言設定（すべて学年別漢字配当表に準拠 & 「賛成・反対」表記なし）
+    // =========================================================================
+    const GRADE_UI = {
+      1: {
+        name: "1年生",
+        bg: "#fce7f3",
+        border: "#fbcfe8",
+        accent: "#db2777",
+        backTop: "← 学年を えらぶ",
+        themesTitle: "トークテーマを えらぼう！（10こ）",
+        randomBtn: "ランダムで えらぶ",
+        backThemes: "← テーマ いちらん",
+        stanceCaption: "いまの かんがえ：",
+        stanceUnset: "まだ えらんで いません",
+        tabs: ["テーマ", "いけんのれい", "さくぶんようし", "はんろん", "ほんばん", "ふりかえり"],
+        s1Badge: "① こんかいの トークテーマ",
+        s1Prompt: "まずは じぶんの かんがえに ちかい ほうを えらぼう：",
+        s1Next: "つぎへ（② れいを 見る）",
+        s2Heading: "② 2つの かんがえの れいを 見よう",
+        s2Sub: "※「ヒントにする」を おすと、さくぶんに 入ります",
+        s2ChooseBtn: "こちらで かく",
+        s2HintBtn: "ヒントにする",
+        s2Prev: "← ① テーマに もどる",
+        s2Next: "つぎへ（③ さくぶんようし）",
+        s3IncreaseBtn: "＋ふやす",
+        s3TemplateBtn: "✨ かきだしのかた",
+        s3ClearBtn: "けす",
+        s3NameLabel: "なまえ：",
+        s3NamePlaceholder: "ここを おして かく",
+        s3PaperNote: "📝 マスを おして ちょくせつ かこう",
+        s3Prev: "← ② いけんのれいに もどる",
+        s3Next: "かけたら「④ はんろん」を 見る！",
+        s4Heading: "④ あなたの さくぶんに たいする はんろん",
+        s4Sub: "ちがう かんがえの 友だちが ききそうな ことです。こたえかたを かんがえよう！",
+        s4Recheck: "🔄 もういちど チェック",
+        s4MyEssay: "📄 あなたの さくぶん",
+        s4EditBtn: "✏️ さくぶんを なおす",
+        s4Prev: "← ③ さくぶんようしに もどる",
+        s4Next: "つぎへ（⑤ ほんばん）",
+        s5Heading: "⑤ はなしあい ほんばんでの アドバイス",
+        s5Sub: "この じゅんばんで はなせば だいじょうぶ！ タイマーで れんしゅう しよう。",
+        s5C1Badge: "1. まず これを いおう！",
+        s5C1Title: "じぶんの かんがえを はっきり いう",
+        s5C1Tip: "💡 あいての 目を 見て、げんきよく はっきり いおう！",
+        s5C2Badge: "2. つぎに これを いおう！",
+        s5C2Title: "なぜ そう おもうのか はなす",
+        s5C2Tip: "💡 「りゆうは〜です」「たとえば〜」を つかおう！",
+        s5C3Badge: "3. はんろんが きたら！",
+        s5C3Title: "うけとめてから こたえる",
+        s5C3Tip: "💡 まず「なるほど」と うなずいてから はなそう！",
+        s5Prev: "← ④ はんろんに もどる",
+        s5Next: "つぎへ（⑥ ふりかえり）",
+        s6Heading: "⑥ はなしあいの ふりかえり",
+        s6Sub: "きょうの はなしあいを ふりかえって、チェックと おもったことを かこう！",
+        s6NameCaption: "なまえ：",
+        s6NameEmpty: "（まだ かいて いません）",
+        s6CheckTitle: "🌟 めあての チェック（あてはまる ものを えらぼう）",
+        s6WriteTitle: "✏️ はなしあいを おえて おもったこと",
+        s6WriteHint: "（れい：〇〇さんの はなしが なるほどと おもいました。）",
+        s6Placeholder: "ここに ふりかえりを かこう...",
+        s6ChangeLabel: "かんがえは どうなった？",
+        s6Change1: "かんがえが ふかまった",
+        s6Change2: "かんがえが かわった",
+        s6Prev: "← ⑤ ほんばんに もどる",
+        s6OtherTheme: "ほかの テーマを えらぶ",
+        s6FinishBtn: "まとめシートを ほぞん",
+        criteria: [
+          "りゆうを つけて じぶんの かんがえが いえた",
+          "友だちの はなしを さいごまで きけた",
+          "しつもんや はんろんに おちついて こたえられた",
+          "はなしあいを して かんがえが ふかまった"
+        ],
+        modalTitle: "トークの じかん まとめシート",
+        savedToast: "✅ がぞうを ほぞんしました！",
+        savePngBtn: "📷 がぞうほぞん",
+        printBtn: "🖨️ いんさつする",
+        closeBtn: "とじる"
+      },
+      2: {
+        name: "2年生",
+        bg: "#ffedd5",
+        border: "#fed7aa",
+        accent: "#ea580c",
+        backTop: "← 学年を えらぶ",
+        themesTitle: "トークテーマを えらぼう！（10こ）",
+        randomBtn: "ランダムで えらぶ",
+        backThemes: "← テーマ いちらん",
+        stanceCaption: "いまの かんがえ：",
+        stanceUnset: "まだ えらんで いません",
+        tabs: ["テーマ", "いけんのれい", "さくぶんようし", "はんろん", "ほんばん", "ふりかえり"],
+        s1Badge: "① こんかいの トークテーマ",
+        s1Prompt: "まずは じぶんの 考えに ちかい ほうを えらぼう：",
+        s1Next: "つぎへ（② れいを 見る）",
+        s2Heading: "② 2つの 考えの れいを 見よう",
+        s2Sub: "※「ヒントにする」を おすと、さくぶんに 入ります",
+        s2ChooseBtn: "こちらで 書く",
+        s2HintBtn: "ヒントにする",
+        s2Prev: "← ① テーマに もどる",
+        s2Next: "つぎへ（③ さくぶんようし）",
+        s3IncreaseBtn: "＋ふやす",
+        s3TemplateBtn: "✨ 書きだしのかた",
+        s3ClearBtn: "けす",
+        s3NameLabel: "なまえ：",
+        s3NamePlaceholder: "ここを おして 書く",
+        s3PaperNote: "📝 マスを おして ちょくせつ 書こう",
+        s3Prev: "← ② いけんのれいに もどる",
+        s3Next: "書けたら「④ はんろん」を 見る！",
+        s4Heading: "④ あなたの さくぶんに たいする はんろん",
+        s4Sub: "ちがう 考えの 友だちが 聞きそうな ことです。答え方を 考えて おこう！",
+        s4Recheck: "🔄 もういちど チェック",
+        s4MyEssay: "📄 あなたの さくぶん",
+        s4EditBtn: "✏️ さくぶんを 書きなおす",
+        s4Prev: "← ③ さくぶんようしに もどる",
+        s4Next: "つぎへ（⑤ ほんばん）",
+        s5Heading: "⑤ 話し合い ほんばんでの アドバイス",
+        s5Sub: "この じゅんばんで 話せば だいじょうぶ！ タイマーで れんしゅう しよう。",
+        s5C1Badge: "1. まず これを 言おう！",
+        s5C1Title: "じぶんの 考えを はっきり 言う",
+        s5C1Tip: "💡 あいての 目を 見て、元気よく はっきり 言おう！",
+        s5C2Badge: "2. つぎに これを 言おう！",
+        s5C2Title: "なぜ そう 思うのか せつめいする",
+        s5C2Tip: "💡 「りゆうは〜です」「たとえば〜」を つかおう！",
+        s5C3Badge: "3. はんろんが 来たら！",
+        s5C3Title: "うけとめてから 答える",
+        s5C3Tip: "💡 まず「なるほど」と うなずいてから 話そう！",
+        s5Prev: "← ④ はんろんに もどる",
+        s5Next: "つぎへ（⑥ ふりかえり）",
+        s6Heading: "⑥ 話し合いの ふりかえり",
+        s6Sub: "きょうの 話し合いを ふりかえって、チェックと 思ったことを 書こう！",
+        s6NameCaption: "なまえ：",
+        s6NameEmpty: "（まだ 書いて いません）",
+        s6CheckTitle: "🌟 めあての チェック（あてはまる ものを えらぼう）",
+        s6WriteTitle: "✏️ 話し合いを おえて 思ったこと",
+        s6WriteHint: "（れい：〇〇さんの 話が なるほどと 思いました。つぎは〜したいです。）",
+        s6Placeholder: "ここに ふりかえりを 書こう...",
+        s6ChangeLabel: "考えは どうなった？",
+        s6Change1: "考えが ふかまった",
+        s6Change2: "考えが かわった",
+        s6Prev: "← ⑤ ほんばんに もどる",
+        s6OtherTheme: "ほかの テーマを えらぶ",
+        s6FinishBtn: "まとめシートを ほぞん",
+        criteria: [
+          "りゆうを つけて じぶんの 考えが 言えた",
+          "友だちの 話を さいごまで 聞けた",
+          "しつもんや はんろんに おちついて 答えられた",
+          "話し合いを して 考えが ふかまった"
+        ],
+        modalTitle: "トークの 時間 まとめシート",
+        savedToast: "✅ がぞうを ほぞんしました！",
+        savePngBtn: "📷 がぞうほぞん",
+        printBtn: "🖨️ いんさつする",
+        closeBtn: "とじる"
+      },
+      3: {
+        name: "3年生",
+        bg: "#fef9c3",
+        border: "#fef08a",
+        accent: "#ca8a04",
+        backTop: "← 学年をえらぶ",
+        themesTitle: "トークテーマをえらぼう！（10こ）",
+        randomBtn: "ランダムでえらぶ",
+        backThemes: "← テーマいちらん",
+        stanceCaption: "いまの考え：",
+        stanceUnset: "まだえらんでいません",
+        tabs: ["テーマ", "二つの意見", "作文ようし", "はんろん", "ほんばん", "ふりかえり"],
+        s1Badge: "① 今回のトークテーマ",
+        s1Prompt: "まずは自分の考えに近いほうをえらぼう：",
+        s1Next: "つぎへ（② 意見のれいを見る）",
+        s2Heading: "② 二つの意見のれいを見て、考えを広げよう",
+        s2Sub: "※「ヒントにする」をおすと、作文のページに入ります",
+        s2ChooseBtn: "こちらで書く",
+        s2HintBtn: "ヒントにする",
+        s2Prev: "← ① テーマにもどる",
+        s2Next: "つぎへ（③ 作文ようし）",
+        s3IncreaseBtn: "＋ふやす",
+        s3TemplateBtn: "✨ 書き出しのかた",
+        s3ClearBtn: "けす",
+        s3NameLabel: "なまえ：",
+        s3NamePlaceholder: "ここをおして書く",
+        s3PaperNote: "📝 マスをおしてちょくせつ書こう",
+        s3Prev: "← ② 二つの意見にもどる",
+        s3Next: "書けたら「④ はんろん」を見る！",
+        s4Heading: "④ あなたの意見作文に対するはんろん",
+        s4Sub: "ちがう考えの友だちが質問しそうなことです。答え方を考えておこう！",
+        s4Recheck: "🔄 もういちどチェック",
+        s4MyEssay: "📄 あなたの意見作文",
+        s4EditBtn: "✏️ 作文を書きなおす",
+        s4Prev: "← ③ 作文ようしにもどる",
+        s4Next: "つぎへ（⑤ ほんばん）",
+        s5Heading: "⑤ 話し合いほんばんでのアドバイス",
+        s5Sub: "このじゅんばんで話せばだいじょうぶ！ タイマーでれんしゅうしよう。",
+        s5C1Badge: "1. まずこれを言おう！",
+        s5C1Title: "自分の考えをはっきり言う",
+        s5C1Tip: "💡 あいての目を見て、元気よくはっきり言おう！",
+        s5C2Badge: "2. つぎにこれを言おう！",
+        s5C2Title: "理由やれいをせつめいする",
+        s5C2Tip: "💡 「理由は〜です」「たとえば〜」をつかうと伝わりやすいよ！",
+        s5C3Badge: "3. はんろんや質問が来たら！",
+        s5C3Title: "うけとめてから答える",
+        s5C3Tip: "💡 まず「なるほど」とうなずいてから話すとやさしい話し合いになるよ！",
+        s5Prev: "← ④ はんろんにもどる",
+        s5Next: "つぎへ（⑥ ふりかえり）",
+        s6Heading: "⑥ 話し合いのふりかえり",
+        s6Sub: "きょうの話し合いをふりかえって、チェックとかんそうを書こう！",
+        s6NameCaption: "なまえ：",
+        s6NameEmpty: "（まだ書いていません）",
+        s6CheckTitle: "🌟 めあてのチェック（あてはまるものをえらぼう）",
+        s6WriteTitle: "✏️ 話し合いをおえて思ったこと・友だちの意見ですごいと思ったこと",
+        s6WriteHint: "（れい：〇〇さんの「〜」という意見がなるほどと思いました。）",
+        s6Placeholder: "ここにふりかえりを書こう...",
+        s6ChangeLabel: "考えはどうなった？",
+        s6Change1: "考えが深まった",
+        s6Change2: "考えがかわった",
+        s6Prev: "← ⑤ ほんばんにもどる",
+        s6OtherTheme: "ほかのテーマをえらぶ",
+        s6FinishBtn: "まとめシートをほぞん",
+        criteria: [
+          "理由をつけて自分の意見が言えた",
+          "友だちの意見をさいごまで聞けた",
+          "質問やはんろんにおちついて答えられた",
+          "話し合いを通して自分の考えが深まった"
+        ],
+        modalTitle: "トークの時間 まとめシート",
+        savedToast: "✅ がぞうをほぞんしました！",
+        savePngBtn: "📷 がぞうほぞん",
+        printBtn: "🖨️ いんさつする",
+        closeBtn: "とじる"
+      },
+      4: {
+        name: "4年生",
+        bg: "#ecfccb",
+        border: "#d9f99d",
+        accent: "#65a30d",
+        backTop: "← 学年を選ぶ",
+        themesTitle: "トークテーマを選ぼう！（10個）",
+        randomBtn: "ランダムで選ぶ",
+        backThemes: "← テーマ一覧",
+        stanceCaption: "今の立場：",
+        stanceUnset: "まだ選んでいません",
+        tabs: ["テーマ", "二つの意見", "作文用紙", "作文への反論", "本番", "振り返り"],
+        s1Badge: "① 今回のトークテーマ",
+        s1Prompt: "まずは自分の考えに近いほうを選ぼう：",
+        s1Next: "次へ（② 意見の例を見る）",
+        s2Heading: "② 二つの立場それぞれの意見の例を見て、考えを広げよう",
+        s2Sub: "※「ヒントにする」を押すと、作文用紙のページに入ります",
+        s2ChooseBtn: "こちらで書く",
+        s2HintBtn: "ヒントにする",
+        s2Prev: "← ① テーマにもどる",
+        s2Next: "次へ（③ 作文用紙）",
+        s3IncreaseBtn: "＋ふやす",
+        s3TemplateBtn: "✨ 書き出しの型",
+        s3ClearBtn: "けす",
+        s3NameLabel: "名前：",
+        s3NamePlaceholder: "ここを押して書く",
+        s3PaperNote: "📝 マスを押して直接書こう",
+        s3Prev: "← ② 二つの意見にもどる",
+        s3Next: "書けたら「④ 作文への反論」を見る！",
+        s4Heading: "④ あなたの意見作文に対する反論・質問",
+        s4Sub: "別の立場の友だちが質問しそうなことです。答え方を考えておこう！",
+        s4Recheck: "🔄 もう一度チェック",
+        s4MyEssay: "📄 あなたの意見作文",
+        s4EditBtn: "✏️ 作文を書き直す",
+        s4Prev: "← ③ 作文用紙にもどる",
+        s4Next: "次へ（⑤ 本番）",
+        s5Heading: "⑤ 話し合い本番でのアドバイス",
+        s5Sub: "この順番で話せば大丈夫！ タイマーで練習しよう。",
+        s5C1Badge: "1. まずこれを言おう！",
+        s5C1Title: "自分の立場をはっきり伝える",
+        s5C1Tip: "💡 相手の目を見て、最初のひとことを元気よくはっきり言おう！",
+        s5C2Badge: "2. 次にこれを言おう！",
+        s5C2Title: "理由や具体例を説明する",
+        s5C2Tip: "💡 「理由は〜です」「たとえば〜」とつなぐ言葉を使うと伝わりやすいよ！",
+        s5C3Badge: "3. 反論や質問が来たら！",
+        s5C3Title: "受け止めてから切り返す",
+        s5C3Tip: "💡 まず「なるほど」「たしかに」と受け止めてから話すとよい話し合いになるよ！",
+        s5Prev: "← ④ 作文への反論にもどる",
+        s5Next: "次へ（⑥ 振り返り）",
+        s6Heading: "⑥ 話し合いの振り返り",
+        s6Sub: "今日の話し合いを振り返って、自己評価と感想を書こう！",
+        s6NameCaption: "名前：",
+        s6NameEmpty: "（未入力）",
+        s6CheckTitle: "🌟 めあてのチェック（あてはまるものを選ぼう）",
+        s6WriteTitle: "✏️ 話し合いを終えて思ったこと・友だちの意見ですごいと思ったこと",
+        s6WriteHint: "（例：〇〇さんの「〜」という意見がなるほどと思いました。次は〜したいです。）",
+        s6Placeholder: "ここに振り返りを書こう...",
+        s6ChangeLabel: "考えはどうなった？",
+        s6Change1: "考えが深まった",
+        s6Change2: "考えが変わった",
+        s6Prev: "← ⑤ 本番にもどる",
+        s6OtherTheme: "別のテーマを選ぶ",
+        s6FinishBtn: "まとめシートをほぞん",
+        criteria: [
+          "理由や具体例をつけて自分の意見が言えた",
+          "友だちの意見をうなずきながら最後まで聞けた",
+          "質問や反論に対して落ち着いて答えられた",
+          "話し合いを通して自分の考えが深まった"
+        ],
+        modalTitle: "トークの時間 まとめシート",
+        savedToast: "✅ がぞうをほぞんしました！",
+        savePngBtn: "📷 がぞうほぞん",
+        printBtn: "🖨️ いんさつする",
+        closeBtn: "とじる"
+      },
+      5: {
+        name: "5年生",
+        bg: "#e0f2fe",
+        border: "#bae6fd",
+        accent: "#0284c7",
+        backTop: "← 学年を選ぶ",
+        themesTitle: "トークテーマを選ぼう！（10個）",
+        randomBtn: "ランダムで選ぶ",
+        backThemes: "← テーマ一覧",
+        stanceCaption: "今の立場：",
+        stanceUnset: "未選択",
+        tabs: ["テーマ", "二つの意見", "作文用紙", "作文への反論", "本番", "振り返り"],
+        s1Badge: "① 今回のトークテーマ",
+        s1Prompt: "まずは自分の考えに近いほうを選ぼう：",
+        s1Next: "次へ（② 意見の例を見る）",
+        s2Heading: "② 二つの立場それぞれの意見の例を見て、考えを広げよう",
+        s2Sub: "※「ヒントにする」を押すと、作文用紙に下書きが入ります",
+        s2ChooseBtn: "こちらで書く",
+        s2HintBtn: "ヒントにする",
+        s2Prev: "← ① テーマに戻る",
+        s2Next: "次へ（③ 作文用紙）",
+        s3IncreaseBtn: "＋増やす",
+        s3TemplateBtn: "✨ 書き出しの型",
+        s3ClearBtn: "消す",
+        s3NameLabel: "名前：",
+        s3NamePlaceholder: "ここを押して入力",
+        s3PaperNote: "📝 マスを押して直接入力しよう",
+        s3Prev: "← ② 二つの意見に戻る",
+        s3Next: "書けたら「④ 作文への反論」を見る！",
+        s4Heading: "④ あなたの意見作文に対する反論・質問",
+        s4Sub: "別の立場の友だちが質問しそうなことです。答え方を考えておこう！",
+        s4Recheck: "🔄 もう一度チェック",
+        s4MyEssay: "📄 あなたの意見作文",
+        s4EditBtn: "✏️ 作文を書き直す",
+        s4Prev: "← ③ 作文用紙に戻る",
+        s4Next: "次へ（⑤ 本番）",
+        s5Heading: "⑤ 話合い本番でのアドバイス",
+        s5Sub: "この順番で話せば大丈夫！ タイマーで発表練習しよう。",
+        s5C1Badge: "1. まずこれを言おう！",
+        s5C1Title: "【結論】自分の立場をはっきり伝える",
+        s5C1Tip: "💡 相手の目を見て、最初のひとことをはっきり伝えよう！",
+        s5C2Badge: "2. 次にこれを言おう！",
+        s5C2Title: "【理由・例】なぜそう思うのか説明する",
+        s5C2Tip: "💡 「理由は〜です」「たとえば〜」とつなぐ言葉を使うと説得力が増すよ！",
+        s5C3Badge: "3. 反論や質問が来たら！",
+        s5C3Title: "【受け止め＋切り返し】落ち着いて答える",
+        s5C3Tip: "💡 まず「なるほど」「たしかに」と受け止めてから自分の考えを話そう！",
+        s5Prev: "← ④ 作文への反論に戻る",
+        s5Next: "次へ（⑥ 振り返り）",
+        s6Heading: "⑥ 話合いの振り返り",
+        s6Sub: "今日の話合いを振り返って、自己評価と感想を書こう！",
+        s6NameCaption: "名前：",
+        s6NameEmpty: "（未入力）",
+        s6CheckTitle: "🌟 めあてのチェック（あてはまるものを選ぼう）",
+        s6WriteTitle: "✏️ 話合いを終えて思ったこと・友だちの意見で参考になったこと",
+        s6WriteHint: "（例：〇〇さんの「〜」という意見がなるほどと思いました。次は〜したいです。）",
+        s6Placeholder: "ここに振り返りを書こう...",
+        s6ChangeLabel: "考えはどうなった？",
+        s6Change1: "考えが深まった",
+        s6Change2: "考えが変わった",
+        s6Prev: "← ⑤ 本番に戻る",
+        s6OtherTheme: "別のテーマを選ぶ",
+        s6FinishBtn: "まとめシートをほぞん",
+        criteria: [
+          "理由や具体例をつけて自分の意見が言えた",
+          "友だちの意見をうなずきながら最後まで聞けた",
+          "質問や反論に対して落ち着いて答えられた",
+          "話合いを通して自分の考えが深まった"
+        ],
+        modalTitle: "トークの時間 まとめシート",
+        savedToast: "✅ 画像を保存しました！",
+        savePngBtn: "📷 画像保存",
+        printBtn: "🖨️ 印刷する",
+        closeBtn: "とじる"
+      },
+      6: {
+        name: "6年生",
+        bg: "#f3e8ff",
+        border: "#e9d5ff",
+        accent: "#9333ea",
+        backTop: "← 学年を選ぶ",
+        themesTitle: "トークテーマを選ぼう！（10個）",
+        randomBtn: "ランダムで選ぶ",
+        backThemes: "← テーマ一覧",
+        stanceCaption: "今の立場：",
+        stanceUnset: "未選択",
+        tabs: ["テーマ", "二つの意見", "作文用紙", "作文への反論", "本番", "振り返り"],
+        s1Badge: "① 今回のトークテーマ",
+        s1Prompt: "まずは自分の立場を選ぼう：",
+        s1Next: "次へ（② 意見の例を見る）",
+        s2Heading: "② 二つの立場それぞれの意見の例を見て、多角的に考えよう",
+        s2Sub: "※「ヒントにする」を押すと、作文用紙に下書きが入ります",
+        s2ChooseBtn: "こちらで書く",
+        s2HintBtn: "ヒントにする",
+        s2Prev: "← ① テーマに戻る",
+        s2Next: "次へ（③ 作文用紙）",
+        s3IncreaseBtn: "＋増やす",
+        s3TemplateBtn: "✨ 書き出しの型",
+        s3ClearBtn: "消す",
+        s3NameLabel: "名前：",
+        s3NamePlaceholder: "ここを押して入力",
+        s3PaperNote: "📝 マスを押して直接入力しよう",
+        s3Prev: "← ② 二つの意見に戻る",
+        s3Next: "書けたら「④ 作文への反論」を見る！",
+        s4Heading: "④ あなたの意見作文に対する予想される反論",
+        s4Sub: "別の立場から予想される反論と切り返しの視点です。議論に備えよう！",
+        s4Recheck: "🔄 もう一度チェック",
+        s4MyEssay: "📄 あなたの意見作文",
+        s4EditBtn: "✏️ 作文を書き直す",
+        s4Prev: "← ③ 作文用紙に戻る",
+        s4Next: "次へ（⑤ 本番）",
+        s5Heading: "⑤ 話合い本番でのアドバイス",
+        s5Sub: "論理的な構成で話せば説得力が高まります。タイマーで練習しよう。",
+        s5C1Badge: "1. まずこれを言おう！",
+        s5C1Title: "【結論】自分の立場を明確に伝える",
+        s5C1Tip: "💡 相手を見て、最初のひとことで自分の立場を明確に示そう！",
+        s5C2Badge: "2. 次にこれを言おう！",
+        s5C2Title: "【根拠・具体例】理由と事実を説明する",
+        s5C2Tip: "💡 理由と具体的な事実・経験を結びつけると説得力が高まります！",
+        s5C3Badge: "3. 反論や質問が来たら！",
+        s5C3Title: "【共感＋切り返し】冷静に答える",
+        s5C3Tip: "💡 一度相手の意見を受け止めてから、自分の根拠を補って説明しよう！",
+        s5Prev: "← ④ 作文への反論に戻る",
+        s5Next: "次へ（⑥ 振り返り）",
+        s6Heading: "⑥ 話合いの振り返り",
+        s6Sub: "今日の議論を振り返って、自己評価と感想を書こう！",
+        s6NameCaption: "名前：",
+        s6NameEmpty: "（未入力）",
+        s6CheckTitle: "🌟 めあてのチェック（あてはまるものを選ぼう）",
+        s6WriteTitle: "✏️ 話合いを終えて思ったこと・友だちの意見で参考になったこと",
+        s6WriteHint: "（例：〇〇さんの「〜」という視点が参考になりました。次は〜したいです。）",
+        s6Placeholder: "ここに振り返りを書こう...",
+        s6ChangeLabel: "考えはどうなった？",
+        s6Change1: "考えが深まった",
+        s6Change2: "考えが変わった",
+        s6Prev: "← ⑤ 本番に戻る",
+        s6OtherTheme: "別のテーマを選ぶ",
+        s6FinishBtn: "まとめシートをほぞん",
+        criteria: [
+          "根拠や具体例をもとに自分の意見が言えた",
+          "友だちの意見の意図を考えながら最後まで聞けた",
+          "質問や反論に対して根拠を示して答えられた",
+          "議論を通して多角的に考えを深められた"
+        ],
+        modalTitle: "トークの時間 まとめシート",
+        savedToast: "✅ 画像を保存しました！",
+        savePngBtn: "📷 画像保存",
+        printBtn: "🖨️ 印刷する",
+        closeBtn: "とじる"
+      }
+    };
+
+    // =========================================================================
+    // 2. 学年別トークテーマ60個（各学年10個・各学年の配当漢字のみ使用・賛成反対なし）
+    // =========================================================================
+    const THEMES_BY_GRADE = {
+      1: [
+        {
+          title: "あさごはんは「ごはん」と「パン」どっちがいい？",
+          desc: "まいにち たべる あさごはん。ごはん（おこめ）と パンの どちらが いいか、りゆうを つけて はなそう。",
+          stanceA: "あさごはんは ごはんの ほうが いい",
+          stanceB: "あさごはんは パンの ほうが いい",
+          opinionsA: ["ごはんは おなかが いっぱいに なって げんきが 出るから。", "おみそしるや なっとうに よく あうから。", "よく かんで たべられるから。"],
+          opinionsB: ["パンは やくだけで すぐ たべられて べんりだから。", "ジャムや バターを ぬると おいしいから。", "ぎゅうにゅうや くだものと いっしょに たべやすいから。"]
+        },
+        {
+          title: "やすみじかんは「そとあそび」と「なかあそび」どっちがいい？",
+          desc: "やすみじかんは、うんどうじょうで あそぶのと きょうしつで あそぶの、どちらが いいかな？",
+          stanceA: "そとあそびの ほうが いい",
+          stanceB: "なかあそびの ほうが いい",
+          opinionsA: ["そとで おにごっこを すると 体が つよく なるから。", "ひろい ところで おもいきり はしれるから。", "おひさまの ひかりを あびると きもちが いいから。"],
+          opinionsB: ["きょうしつで おえかきや ほんよみを すると おちつくから。", "あつい日や さむい日でも へやの 中は すごしやすいから。", "けがを する しんぱいが すくないから。"]
+        },
+        {
+          title: "ペットを かうなら「犬」と「ねこ」どっちがいい？",
+          desc: "おうちで どうぶつを かうとしたら、犬と ねこの どちらが いいか かんがえよう。",
+          stanceA: "犬を かう ほうが いい",
+          stanceB: "ねこを かう ほうが いい",
+          opinionsA: ["犬は いっしょに さんぽに いけて たのしいから。", "なまえを よぶと しっぽを ふって きてくれて かわいいから。", "ボールなげなどの あそびが できるから。"],
+          opinionsB: ["ねこは しずかで おうちの 中で かいやすいから。", "ふわふわの けを なでると 心が やすらぐから。", "さんぽに いかなくても いいので おせわが しやすいから。"]
+        },
+        {
+          title: "きゅうしょくで すきな おかずは「さいしょ」に たべる？「さいご」に たべる？",
+          desc: "いちばん すきな おかずを どの じゅんばんで たべるのが いいか はなしあおう。",
+          stanceA: "すきな おかずは さいしょに たべる",
+          stanceB: "すきな おかずは さいごに たべる",
+          opinionsA: ["さいしょに たべると、あたたかくて いちばん おいしい ときに たべられるから。", "すきな ものを たべると げんきが 出て、にがてな ものも がんばれるから。", "おなかが すいている ときに たべると さいこうだから。"],
+          opinionsB: ["さいごに たべると、たのしみが あとに のこって うれしいから。", "たべおわった あとに おいしい あじが 口に のこるから。", "にがてな ものを さきに がんばる ごほうびに なるから。"]
+        },
+        {
+          title: "えんそくに いくなら「うみ」と「山」どっちがいい？",
+          desc: "みんなで えんそくに いくなら、うみと 山の どちらが たのしいかな？",
+          stanceA: "うみに いく ほうが いい",
+          stanceB: "山に いく ほうが いい",
+          opinionsA: ["うみは すなはまで 貝がらを ひろったり おしろを つくったり できるから。", "ひろい うみを みると わくわくするから。", "うみの いきものを かんさつ できるから。"],
+          opinionsB: ["山は 木や 花や 虫など、しぜんが いっぱい あるから。", "てっぺんまで のぼった ときの けしきが きれいだから。", "木かげが あって すずしく あるけるから。"]
+        },
+        {
+          title: "しゅくだいは「ない ほうが いい」？「ある ほうが いい」？",
+          desc: "おうちに かえったあとの しゅくだいは、ない ほうが いいか、ある ほうが いいか はなそう。",
+          stanceA: "しゅくだいは ない ほうが いい",
+          stanceB: "しゅくだいは ある ほうが いい",
+          opinionsA: ["おうちに かえってから ゆっくり あそんだり やすんだり できるから。", "じぶんで やりたい べんきょうや どくしょに じかんを つかえるから。", "かぞくと おしゃべりする じかんが ふえるから。"],
+          opinionsB: ["学校で ならった ことを わすれないように ふくしゅう できるから。", "まいにち べんきょうする しゅうかんが つくから。", "おうちの 人に がんばっている ところを 見てもらえるから。"]
+        },
+        {
+          title: "きせつは「夏」と「冬」どっちが すき？",
+          desc: "あつい 夏と さむい 冬、たのしい ことが おおいのは どっちかな？",
+          stanceA: "夏の ほうが すき",
+          stanceB: "冬の ほうが すき",
+          opinionsA: ["夏は プールに 入ったり、夏やすみが あったり して たのしいから。", "スイカや アイスが おいしいから。", "ひるまの じかんが ながくて たくさん あそべるから。"],
+          opinionsB: ["冬は ゆきあそびや クリスマス、おしょうがつが あって たのしいから。", "こたつや おふろが ぽかぽかして 気もちいいから。", "虫が いないので そとで すごしやすいから。"]
+        },
+        {
+          title: "本を よむなら「え本」と「ずかん」どっちがいい？",
+          desc: "としょしつで 本を かりるなら、え本と ずかんの どちらが いいかな？",
+          stanceA: "え本の ほうが いい",
+          stanceB: "ずかんの ほうが いい",
+          opinionsA: ["え本は おはなしの せかいに 入れて どきどきするから。", "やさしい 気もちや たのしい 気もちに なれるから。", "えが きれいで ページを めくるのが たのしいから。"],
+          opinionsB: ["ずかんは いきものや のりものの ひみつが たくさん わかるから。", "しゃしんが くわしくて べんきょうに なるから。", "しらない ことを 友だちに おしえてあげられるから。"]
+        },
+        {
+          title: "学校の いきかえりは「ひとり」と「友だちといっしょ」どっちがいい？",
+          desc: "とうこうや げこうの とき、友だちと いっしょに あるくのと 一人で あるくのと どちらが いいかな？",
+          stanceA: "友だちと いっしょが いい",
+          stanceB: "ひとりで あるく ほうが いい",
+          opinionsA: ["友だちと おしゃべりしながら あるくと たのしくて すぐ つくから。", "こまった ときや あぶない ときに たすけあえるから。", "一人よりも あんしんだから。"],
+          opinionsB: ["一人だと じぶんの ペースで はやく あるけるから。", "みちばたの 花や 空を ゆっくり 見ながら かえれるから。", "おしゃべりに むちゅうに ならず、車に 気をつけられるから。"]
+        },
+        {
+          title: "おたんじょうびプレゼントは「おもちゃ」と「本」どっちが うれしい？",
+          desc: "プレゼントを もらうなら、おもちゃと 本の どちらが うれしいか はなそう。",
+          stanceA: "おもちゃの ほうが うれしい",
+          stanceB: "本の ほうが うれしい",
+          opinionsA: ["おもちゃは 友だちや かぞくと なんかいも あそべるから。", "うごかしたり つくったり するのが たのしいから。", "ずっと ほしかった もので あそべると うれしいから。"],
+          opinionsB: ["本は なんども よみかえして あたらしい はっけんが あるから。", "かしこく なれるし、ものがたりを たのしめるから。", "ばしょを とらずに 本だなに しまえるから。"]
+        }
+      ],
+      2: [
+        {
+          title: "きょうしつで いきものを「かう ほうが いい」？「かわない ほうが いい」？",
+          desc: "2年生の きょうしつで、メダカや カブトムシなどの いきものを かうことに ついて 考えよう。",
+          stanceA: "いきものを かう ほうが いい",
+          stanceB: "いきものを かわない ほうが いい",
+          opinionsA: ["まいにち せわを することで、いのちを たいせつに する 心が そだつから。", "いきものの せいちょうや うごきを まいにち かんさつ できるから。", "クラスのみんなで 力を あわせて せわを するのが たのしいから。"],
+          opinionsB: ["やすみの日や ながい やすみの ときに せわを するのが たいへんだから。", "きょうしつが よごれたり においが したり することが あるから。", "いきものが びょうきに なったとき、かわいそうだから。"]
+        },
+        {
+          title: "えんぴつは「けしごむつき えんぴつ」と「ふつうの えんぴつ」どっちがいい？",
+          desc: "ふつうの えんぴつと、おしりに けしごむが ついている えんぴつ、どちらが べんりかな？",
+          stanceA: "けしごむつき えんぴつが いい",
+          stanceB: "ふつうの えんぴつが いい",
+          opinionsA: ["まちがえた ときに すぐ けせて べんりだから。", "けしごむを わすれた ときでも だいじょうぶだから。", "もちかえる じかんが みじかくて すむから。"],
+          opinionsB: ["ちいさい けしごむは すぐ なくなって しまうから。", "おおきい けしごむの ほうが きれいに よく けせるから。", "えんぴつの おもさが かわって 書きにくい ことがあるから。"]
+        },
+        {
+          title: "図書室の本は「3さつまで」に ふやす？「2さつまで」のままにする？",
+          desc: "いま かりられる 本の 数を 1さつ ふやして 3さつに するか、2さつの ままに するか 話し合おう。",
+          stanceA: "3さつまで かりられるように する",
+          stanceB: "2さつまでの ままに する",
+          opinionsA: ["ながい やすみの 前や 土よう日・日よう日に たくさん 読めるから。", "ものがたりと ずかんなど、ちがう しゅるいの 本を いっしょに かりられるから。", "本を もっと すきになる 人が ふえるから。"],
+          opinionsB: ["3さつ かりると 読みおわらなくて、かえす のが おくれる 人が ふえるから。", "にんきの 本が いつも かりられて いて、読めない 人が 出てくるから。", "ランドセルが おもくなって もちかえりが たいへんだから。"]
+        },
+        {
+          title: "そうじの じかんは「音楽を ながす」のと「しずかに やる」の どっちがいい？",
+          desc: "学校の そうじの じかんに、たのしい 音楽を ながすか、しずかに そうじするか 考えよう。",
+          stanceA: "音楽を ながした ほうが いい",
+          stanceB: "しずかに そうじした ほうが いい",
+          opinionsA: ["音楽が ながれると 気分が 明るくなって、そうじが たのしく なるから。", "リズムに のって テキパキ うごけるから。", "おしゃべりが へって、そうじに しゅうちゅう できるから。"],
+          opinionsB: ["音楽が 気になって、そうじの 手が とまって しまう 人が いるから。", "先生の お話や れんらくが 聞こえにくく なるから。", "しずかに そうじをした ほうが ほこりや ごみに 気づきやすいから。"]
+        },
+        {
+          title: "雨の日の やすみじかんは「図書室」と「きょうしつ」どっちで すごすのが いい？",
+          desc: "外に 出られない 雨の日は、どこで すごすのが おすすめかな？",
+          stanceA: "図書室で すごす ほうが いい",
+          stanceB: "きょうしつで すごす ほうが いい",
+          opinionsA: ["図書室は たくさんの 本が あって、しずかに ゆっくり すごせるから。", "あたらしい 本と 出あう チャンスに なるから。", "ろうかを 走る 人が へって あんぜんだから。"],
+          opinionsB: ["きょうしつなら 友だちと 折り紙や ボードゲームで なかよく あそべるから。", "図書室が こんざつ せずに すむから。", "つぎの じゅぎょうの じゅんびが すぐ できるから。"]
+        },
+        {
+          title: "学校の グループわけは「くじびき」と「自分たちで きめる」どっちがいい？",
+          desc: "はんや グループを つくるとき、どうやって きめるのが いいと 思いますか？",
+          stanceA: "くじびきで きめる ほうが いい",
+          stanceB: "自分たちで きめる ほうが いい",
+          opinionsA: ["くじびきなら いろんな 友だちと なかよく なれるから。", "けんかに ならず、みんな おなじように きめられるから。", "あたらしい はっけんや 助け合いが うまれるから。"],
+          opinionsB: ["自分たちで きめれば、話しやすい 友だちと 力を あわせられるから。", "めあてや やりたい ことが 同じ 人が あつまれるから。", "ひとりぼっちに なる しんぱいが すくないから。"]
+        },
+        {
+          title: "おこづかいは「毎月きまった お金」と「おてつだいした分」どっちがいい？",
+          desc: "おうちで おこづかいを もらうとしたら、どちらの やり方が いいかな？",
+          stanceA: "毎月きまった お金を もらう",
+          stanceB: "おてつだいした分を もらう",
+          opinionsA: ["毎月きまって いれば、けいかくを たてて ちょきんが できるから。", "おてつだいは お金の ためではなく、かぞくの ために するものだから。", "いそがしくて おてつだいできない 月も あんしんだから。"],
+          opinionsB: ["おてつだいした分 もらえると、がんばろうという やる気が 出るから。", "はたらく ことの たいへんさや 大切さが わかるから。", "たくさん がんばれば ほしい ものが はやく かえるから。"]
+        },
+        {
+          title: "うんどう会の れんしゅうは「もっと ふやす」？「いまの ままに する」？",
+          desc: "かっこいい えんぎや かけっこの ために、れんしゅうの じかんを ふやすか 考えよう。",
+          stanceA: "れんしゅうを もっと ふやす",
+          stanceB: "れんしゅうは いまの ままに する",
+          opinionsA: ["たくさん れんしゅうすれば じしんが ついて、ほんばんで せいこう できるから。", "クラスの チームワークが もっと よくなるから。", "おうちの人に いちばん いい すがたを 見せたいから。"],
+          opinionsB: ["れんしゅうが おおすぎると つかれて けがを しやすく なるから。", "国語や 算数の べんきょうの じかんが へって しまうから。", "みじかい じかんで しゅうちゅうして れんしゅうした ほうが いいから。"]
+        },
+        {
+          title: "給食の「おかわり」は「じゃんけん」と「じゅんばん」どっちがいい？",
+          desc: "あまった 給食を ほしい 人が たくさん いるとき、どうやって きめるのが いいかな？",
+          stanceA: "じゃんけんで きめる ほうが いい",
+          stanceB: "じゅんばんで きめる ほうが いい",
+          opinionsA: ["じゃんけんなら うんしだいなので、だれも もんくが なく こうへいだから。", "みじかい じかんで すぐに きめられるから。", "ルールが かんたんで わかりやすいから。"],
+          opinionsB: ["じゅんばんなら みんなに びょうどうに チャンスが まわって くるから。", "いつも じゃんけんに まけて しまう 人も うれしいから。", "おちついて ならんで わける ことが できるから。"]
+        },
+        {
+          title: "夏休みの 宿題は「7月中に おわらせる」と「毎日すこしずつ やる」どっちがいい？",
+          desc: "ながい 夏休み、宿題を どんな けいかくで すすめるのが いいか 考えよう。",
+          stanceA: "7月中に おわらせる ほうが いい",
+          stanceB: "毎日すこしずつ やる ほうが いい",
+          opinionsA: ["7月中に おわらせれば、8月は 思いっきり あそびや 自由けんきゅうが できるから。", "1学期の べんきょうを おぼえている うちに やるほうが かんたんだから。", "さいごに あわてて おうちの人におこられなくて すむから。"],
+          opinionsB: ["毎日 すこしずつ やった ほうが、べんきょうの しゅうかんが つづくから。", "いそいで やると 字が きたなくなったり まちがえたり するから。", "8月の おわりまで 少しずつ ふくしゅうした ほうが 2学期に わすれないから。"]
+        }
+      ],
+      3: [
+        {
+          title: "学校のれんらくちょうは「手書きのノート」と「タブレット入力」どっちがいい？",
+          desc: "毎日の持ち物や宿題を伝えるれんらくちょう、ノートに書くのとタブレットに入力するのとではどちらがよいでしょう。",
+          stanceA: "手書きのノートのほうがよい",
+          stanceB: "タブレット入力のほうがよい",
+          opinionsA: ["手書きのノートなら、漢字や文字をていねいに書くれんしゅうになるから。", "じゅうでん切れや通信エラーの心配がなく、いつでも見られるから。", "おうちの人にもパッと開いて見せやすいから。"],
+          opinionsB: ["タブレットなら書きまちがいをすぐ直せて、時間もみじかくなるから。", "先生から送られたれんらくをそのままかくにんできるので書きうつしミスがないから。", "ノートを持ち帰る荷物が軽くなるから。"]
+        },
+        {
+          title: "給食の時間は「グループで向かい合う」のと「前を向いて食べる」のどっちがいい？",
+          desc: "机をくっつけてグループで食べるのと、前を向いて食べるのとではどちらがよいか話し合おう。",
+          stanceA: "グループで向かい合って食べる",
+          stanceB: "前を向いて食べる",
+          opinionsA: ["友だちの顔を見ながら楽しく話して食べると、給食がもっとおいしくなるから。", "クラスの仲が深まり、ふだん話さない人ともこうりゅうできるから。", "楽しいふんいきだと苦手な食べ物にもちょうせんしやすいから。"],
+          opinionsB: ["おしゃべりに夢中になって、時間内に食べ終わらない人が出てくるから。", "前を向いて食べたほうが、えいせい面でも安心だから。", "静かに自分のペースであじわって食べたい人もいるから。"]
+        },
+        {
+          title: "図書館の新しい本は「アンケートで決める」のと「先生がえらぶ」のどっちがいい？",
+          desc: "学校図書館に新しく入れる本を、じどうのアンケートで決めるか、先生や司書さんにえらんでもらうか考えよう。",
+          stanceA: "じどうのアンケートで決める",
+          stanceB: "先生や司書さんがえらぶ",
+          opinionsA: ["みんなが読みたい本が入ることで、図書館に行く人がもっとふえるから。", "じどうの意見が学校に取り入れられると、学校生活が楽しくなるから。", "人気のシリーズ本などがそろいやすくなるから。"],
+          opinionsB: ["自分ではえらばないような新しいジャンルの本や名作と出会うきかいがふえるから。", "まんがや人気作ばかりにかたよらず、べんきょうになる本もそろうから。", "全校のアンケートを集める時間や手間をはぶけるから。"]
+        },
+        {
+          title: "習い事をするなら「スポーツ系」と「文化・べんきょう系」どっちがおすすめ？",
+          desc: "小学生のうちに習い事をするなら、体を動かすものと頭や指先を使うもののどちらがよいか考えよう。",
+          stanceA: "スポーツ系の習い事がよい",
+          stanceB: "文化・べんきょう系の習い事がよい",
+          opinionsA: ["スポーツ系は体力がつき、チームワークやれいぎも身につくから。", "外で体を動かすことでストレス発散になり、よくねむれるから。", "けんこうな体づくりの土台ができるから。"],
+          opinionsB: ["文化・べんきょう系はピアノやプログラミングなど、一生役立つ特技が身につくから。", "天気に左右されず、けがの心配も少ないから。", "集中力や考える力がのびて、学校のじゅぎょうにも役立つから。"]
+        },
+        {
+          title: "クラス目標は「毎日ふり返る」のと「週に1回ふり返る」のどっちがいい？",
+          desc: "帰りの会などで、クラス目標が守れたかふり返るタイミングについて話し合おう。",
+          stanceA: "毎日ふり返るほうがよい",
+          stanceB: "週に1回ふり返るほうがよい",
+          opinionsA: ["毎日いしきすることで、目標がかざりにならずに行動が変わるから。", "よかったところをみとめ合うことで、クラスのふんいきがよくなるから。", "直すところにすぐ気づいて、次の日に生かせるから。"],
+          opinionsB: ["毎日同じことをふり返ると、なれてしまって形だけになりやすいから。", "帰りの会の時間が長くなり、下校時こくがおそくなるのをふせげるから。", "1週間まとめてふり返ったほうが、せいちょうを実感しやすいから。"]
+        },
+        {
+          title: "買い物をするなら「近くのしょうてんがい・お店」と「大型ショッピングモール」どっちがいい？",
+          desc: "ちいきの商店と大きなショッピングモール、それぞれのよさを比べて話し合おう。",
+          stanceA: "近くのしょうてんがい・お店がよい",
+          stanceB: "大型ショッピングモールがよい",
+          opinionsA: ["近くのお店は店員さんと顔なじみになれて、ちいきのつながりが生まれるから。", "歩いてすぐ行けるので、ちょっとした買い物にべんりだから。", "ちいきのお店をおうえんすることで、町が元気になるから。"],
+          opinionsB: ["ショッピングモールは1か所で何でもそろうので、家族で買い物しやすいから。", "雨の日でもぬれずに買い物ができ、イベントも楽しめるから。", "品ぞろえがほうふで、ねだんやしゅるいを比べやすいから。"]
+        },
+        {
+          title: "小学生でも「自分せんようのうで時計」を「持つべき」？「持たなくてよい」？",
+          desc: "時間を見て行動するために、小学生がうで時計を持つことについて話し合おう。",
+          stanceA: "自分せんようのうで時計を持つべき",
+          stanceB: "まだうで時計は持たなくてよい",
+          opinionsA: ["いつでも時間を確認できるので、5分前行動ができるようになるから。", "時計の読み方に強くなり、時間を大切にするいしきが育つから。", "公園で遊ぶときや習い事の行き帰りにべんりだから。"],
+          opinionsB: ["学校には教室に時計があるし、じゅぎょう中に気にしてさわってしまうことがあるから。", "なくしたりこわしたりする心配があるから。", "体育や図工のときに外す手間がかかり、なくしやすいから。"]
+        },
+        {
+          title: "たんじょう日は「友だちとパーティー」と「家族でお祝い」どっちがいい？",
+          desc: "年に一度の特別な日、どんなすごし方が一番うれしいか話し合おう。",
+          stanceA: "友だちとパーティーをするのがよい",
+          stanceB: "家族でお祝いするのがよい",
+          opinionsA: ["友だちとパーティーをすると、ゲームやプレゼントこうかんで盛り上がるから。", "たくさんの友だちにお祝いしてもらえて、特別な思い出になるから。", "学校とはちがう楽しさがあるから。"],
+          opinionsB: ["家族でお祝いすると、好きなごちそうやケーキをゆっくり楽しめるから。", "生まれてきたことや育ててくれたことへのかんしゃを伝え合えるから。", "気をつかわずにリラックスしてすごせるから。"]
+        },
+        {
+          title: "遠足のおやつは「きんがくの決まりをなくす」？「300円までの決まりを残す」？",
+          desc: "遠足に持っていくおやつのきんがくの決まりについて、どうするのがよいか考えよう。",
+          stanceA: "きんがくの決まりをなくすほうがよい",
+          stanceB: "300円までの決まりを残すほうがよい",
+          opinionsA: ["今は物のねだんが上がっているので、300円だと少ししか買えないから。", "自分で食べられる量を考えて持っていくれんしゅうになるから。", "好きなものを自由にえらべたほうが遠足が楽しくなるから。"],
+          opinionsB: ["決まりがないと、たくさん持ってくる人と少ない人でふこうへいになるから。", "300円の中で計算しながらえらぶのが遠足の楽しみの一つだから。", "おやつを食べすぎてお弁当が食べられなくなるのをふせげるから。"]
+        },
+        {
+          title: "クラスの係活動は「1学期ごとにこうたい」と「1年間同じ」どっちがいい？",
+          desc: "クラスの仕事を分たんする係活動、学期ごとに変えるのと1年間続けるのではどちらがよいでしょう。",
+          stanceA: "1学期ごとにこうたいする",
+          stanceB: "1年間同じ係をつづける",
+          opinionsA: ["1学期ごとにこうたいすれば、いろいろな仕事にチャレンジできるから。", "人気のある係もびょうどうにけいけんするチャンスができるから。", "新しいメンバーと協力するけいけんがふえるから。"],
+          opinionsB: ["1年間同じ係を続けたほうが、仕事になれて工夫やレベルアップができるから。", "せきにん感が育ち、さいごまでやりぬく力がつくから。", "学期ごとに決め直す時間をはぶけるから。"]
+        }
+      ],
+      4: [
+        {
+          title: "学校の宿題は「全員同じプリント」と「自分で選べる自主学習」どっちがいい？",
+          desc: "家庭学習の進め方として、先生が配るプリントと自分で内容を決める自主学習のどちらが力がつくか考えよう。",
+          stanceA: "全員同じプリントのほうがよい",
+          stanceB: "自分で選べる自主学習のほうがよい",
+          opinionsA: ["全員同じプリントなら、その日に習った大切なポイントを全員が確実にふく習できるから。", "何をするかまよわずにすぐ取りかかれるから。", "先生も全員の理解度を確認しやすいから。"],
+          opinionsB: ["自主学習なら、自分の苦手な教科や得意な分野に合わせて勉強できるから。", "自分で計画を立てる力や、調べる楽しさが身につくから。", "やる気を持って主体的に取り組めるから。"]
+        },
+        {
+          title: "小学生の「ゲームや動画の時間」は「家庭でルールを決める」？「自分で管理する」？",
+          desc: "平日のゲームや動画視聴の時間を制限するルールをつくるか、自分で時間を管理するか話し合おう。",
+          stanceA: "家庭で時間のルールを決めるべき",
+          stanceB: "自分で時間を管理するほうがよい",
+          opinionsA: ["ルールがないとついやりすぎてしまい、視力低下やね不足につながるから。", "宿題や外遊び、家族との会話の時間をしっかり確保できるから。", "時間を守って行動する習慣が身につくから。"],
+          opinionsB: ["きびしく制限されると、かえってかくれてやったりストレスがたまったりするから。", "自分で時計を見て切り上げる力を育てたほうが将来のためになるから。", "その日の宿題や予定に合わせて柔軟に調整できるから。"]
+        },
+        {
+          title: "学校のそうじは「縦割り班（異学年）」と「自分のクラスだけ」どっちがいい？",
+          desc: "自分のクラスだけでそうじするのと、1〜6年生の縦割り班でそうじするのとではどちらがよいでしょう。",
+          stanceA: "縦割り班でそうじするほうがよい",
+          stanceB: "自分のクラスだけでそうじするほうがよい",
+          opinionsA: ["上級生が下級生にそうじの仕方を教えることで、思いやりやリーダーシップが育つから。", "他の学年の友だちと顔見知りになり、学校全体が仲よくなるから。", "広い場所も協力してきれいにできるから。"],
+          opinionsB: ["自分の教室は自分たちでそうじしたほうが、愛着や責任感がわくから。", "集合や移動に時間がかかり、実際のそうじ時間が短くなってしまうから。", "同じ学年のほうが気を遣わずにテキパキ動けるから。"]
+        },
+        {
+          title: "地域の公園に「ボール遊び専用のエリア」を「つくるべき」？「つくらなくてよい」？",
+          desc: "ボール遊び禁止の公園が増えている中、安全にボール遊びができる場所をつくることについて話し合おう。",
+          stanceA: "ボール遊び専用のエリアをつくるべき",
+          stanceB: "専用エリアはつくらなくてよい",
+          opinionsA: ["思いきりサッカーやキャッチボールができる場所があれば、子どもたちの運動不足解消になるから。", "エリアが分かれていれば、小さな子どもやお年寄りも安心して公園を利用できるから。", "道路で遊んで事故にあう危険を減らせるから。"],
+          opinionsB: ["せまい公園にエリアをつくると、他の遊具や広場がせまくなってしまうから。", "フェンスなどを設置する費用がかかり、ボールが外に飛び出す危険も残るから。", "時間帯で分けたり、広い運動場を活用したりするほうが現実的だから。"]
+        },
+        {
+          title: "読書感想文は「課題図書」と「自由図書」どっちが書きやすい？",
+          desc: "夏休みの読書感想文を書くとき、指定された課題図書と自分で選んだ自由図書のどちらがよいか考えよう。",
+          stanceA: "課題図書から選ぶほうがよい",
+          stanceB: "自由図書から選ぶほうがよい",
+          opinionsA: ["課題図書は年齢に合った読みやすい本が選ばれているので、感想をまとめやすいから。", "同じ本を読んだ友だちと感想を共有しやすいから。", "ふだん自分では手に取らないテーマの本にちょうせんできるから。"],
+          opinionsB: ["自由図書なら自分が本当に興味のある本を選べるので、心が動いたことを書きやすいから。", "好きなジャンルの本なら最後まで楽しく読み切れるから。", "家にある本や図書館で借りた本でもすぐに取り組めるから。"]
+        },
+        {
+          title: "学校のチャイムは「なくす（ノーチャイム）」？「鳴らし続ける」？",
+          desc: "チャイムを鳴らさず時計を見て行動する「ノーチャイム」と、チャイムを鳴らすのとではどちらがよいでしょう。",
+          stanceA: "チャイムをなくす（ノーチャイム）ほうがよい",
+          stanceB: "今まで通りチャイムを鳴らすほうがよい",
+          opinionsA: ["チャイムに頼らず、一人ひとりが時計を見て行動する自主性が育つから。", "静かな環境で落ち着いて学校生活を送れるから。", "社会に出たときにも役立つ時間管理の力が身につくから。"],
+          opinionsB: ["外遊びや話し合いに夢中になっていると、チャイムがないと時間に気づきにくいから。", "授業の始まりと終わりのけじめがつきにくくなるから。", "時計が見えにくい場所でも音で知らせてくれるほうが安心だから。"]
+        },
+        {
+          title: "感謝やお祝いのメッセージは「手書きの手紙」と「デジタルメッセージ」どっちがいい？",
+          desc: "感謝やお祝いの気持ちを伝えるとき、手紙とスマホ・タブレットのメッセージのどちらがよいでしょう。",
+          stanceA: "手書きの手紙のほうがよい",
+          stanceB: "デジタルメッセージのほうがよい",
+          opinionsA: ["手書きの手紙は文字やイラストから温かみが伝わり、ずっと記念に残せるから。", "時間をかけてていねいに書くことで、より深い感謝の気持ちが伝わるから。", "相手が受け取ったときの喜びが大きいから。"],
+          opinionsB: ["デジタルメッセージなら遠くに住む人にも一瞬で届けられ、写真や動画も送れるから。", "紙を使わないので環境にやさしく、書き直しも簡単だから。", "いつでも気軽にお礼のやり取りができるから。"]
+        },
+        {
+          title: "クラスの席替えは「月1回」と「学期に1回」どっちがいい？",
+          desc: "座席を変えるペースについて、毎月変えるのと学期に1回変えるのとを比べて意見を出そう。",
+          stanceA: "月1回のペースで席替えをする",
+          stanceB: "学期に1回のペースで席替えをする",
+          opinionsA: ["毎月変われば、いろいろな友だちと近くになってクラスの輪が広がるから。", "黒板が見えにくい席やエアコンの風が当たる席の不公平が減るから。", "気分転換になって授業に集中しやすくなるから。"],
+          opinionsB: ["毎月席替えをすると、決める時間や机を運ぶ時間がもったいないから。", "ようやくとなりの席の人となれてきたころに変わってしまうから。", "視力や体の事情に配慮した席の調整が落ち着いてできるから。"]
+        },
+        {
+          title: "外出時の飲み物は「水筒（マイボトル）」と「ペットボトル」どっちがいい？",
+          desc: "外出時や学校での飲み物について、水筒を持ち歩くのとペットボトルを買うのとで話し合おう。",
+          stanceA: "水筒（マイボトル）を使うほうがよい",
+          stanceB: "ペットボトルも活用するほうがよい",
+          opinionsA: ["プラスチックごみを大幅に減らすことができ、地球環境を守れるから。", "毎回ペットボトルを買うよりもお金の節約になるから。", "保温・保冷ができるので、いつでもおいしい温度で飲めるから。"],
+          opinionsB: ["夏場など水筒が空になったとき、自販機で買えないと熱中症の危険があるから。", "毎日水筒を洗って準備するのは負担が大きく、荷物も重くなるから。", "災害時や急な外出のときにはペットボトルがとても便利だから。"]
+        },
+        {
+          title: "子どもだけの「お留守番」は「4年生からできる」？「まだ早い」？",
+          desc: "大人がいない家で安全に留守番をすることについて、自分の考えを理由とともに伝えよう。",
+          stanceA: "4年生からならお留守番できる",
+          stanceB: "4年生でもまだお留守番は早い",
+          opinionsA: ["4年生になれば電話やインターホンの対応、かぎの閉め方が理解できるので安心だから。", "困ったときの連絡先を決めておけば、自立心を育てるよい経験になるから。", "自分の時間を計画的に過ごす練習になるから。"],
+          opinionsB: ["地震や火事などの緊急時が起きたとき、子どもだけでは冷静な判断が難しいから。", "不審者への対応など、防犯面での不安が残るから。", "年齢だけでなく、地域の環境や家庭のルールによって慎重に決めるべきだから。"]
+        }
+      ],
+      5: [
+        {
+          title: "小学校の授業は「教科担任制」と「学級担任制」どっちがいい？",
+          desc: "教科ごとに専門の先生が教える教科担任制と、担任の先生が多くの教科を教える学級担任制を比べよう。",
+          stanceA: "教科担任制を増やすほうがよい",
+          stanceB: "学級担任制を中心にするほうがよい",
+          opinionsA: ["専門の先生から教わることで、授業がより分かりやすく深まるから。", "複数の先生と関わることで、相談できる大人が増え、中学校への準備にもなるから。", "先生一人ひとりの負担が減り、授業の準備が充実するから。"],
+          opinionsB: ["担任の先生と過ごす時間が長く、クラス全体のまとまりや一人ひとりの様子の把握がしやすいから。", "先生によってルールや進め方がちがい、戸惑うことが少ないから。", "授業の合間の準備や移動に時間がかからないから。"]
+        },
+        {
+          title: "インターネットを使うときは「危険への注意」と「積極的な活用」どっちが大事？",
+          desc: "調べ学習や日常でネットを使うとき、どのような姿勢が一番大切か話し合おう。",
+          stanceA: "危険への注意・ルールを守ることを最優先にする",
+          stanceB: "積極的に活用して使いこなす力を伸ばす",
+          opinionsA: ["うその情報や個人情報流出などの危険性をしっかり意識して、慎重に使うべきだから。", "一度ネットに出た情報は消えないため、トラブルを防ぐ知識が最優先だから。", "複数の情報源を比べる力がないと誤った知識を信じてしまうから。"],
+          opinionsB: ["危険ばかり恐れて使わないと、最新の知識や多様な意見に触れるチャンスを逃すから。", "正しく活用すれば学習効率が大きく上がり、世界とつながる強力な道具になるから。", "実際に使いながらルールやマナーを身につけていくほうが実践的だから。"]
+        },
+        {
+          title: "学校行事は「勝ち負け・順位をつける」のと「順位をつけない」のどっちがいい？",
+          desc: "運動会や合唱コンクール、球技大会などで順位をつけることについて話し合おう。",
+          stanceA: "勝ち負け・順位をつけるほうがよい",
+          stanceB: "順位をつけないほうがよい",
+          opinionsA: ["順位があることで目標が明確になり、クラスで本気になって努力できるから。", "勝ったときの喜びや負けたときの悔しさが、次の成長につながるから。", "応援にも熱が入り、行事全体が大きく盛り上がるから。"],
+          opinionsB: ["順位がつくと、苦手な人が責められたりクラスの雰囲気が悪くなったりすることがあるから。", "勝ち負けよりも、一人ひとりが全力を出して楽しむことのほうが大切だから。", "結果だけでなく、そこまでの練習の過程を評価するべきだから。"]
+        },
+        {
+          title: "これからの社会に必要なのは「完璧なロボット」と『弱いロボット』どっち？",
+          desc: "国語の学習を踏まえ、人間の手助けを必要とする「弱いロボット」と高性能なロボットの価値を比べよう。",
+          stanceA: "『弱いロボット』が社会に必要",
+          stanceB: "完璧に仕事をこなすロボットが必要",
+          opinionsA: ["弱いロボットは人の優しさや『助けてあげよう』という力を引き出し、温かい社会をつくるから。", "人間がすべてを機械に任せきりにならず、関わり合いが生まれるから。", "子どもやお年寄りの心の支えになりやすいから。"],
+          opinionsB: ["災害救助や医療、介護などの現場では、ミスなく仕事をこなす完璧なロボットが必要だから。", "人手不足を補うためには、人間の手を借りずに動けるほうが実用的だから。", "用途によって使い分けるべきで、基本は高性能なほうが安全だから。"]
+        },
+        {
+          title: "小学生の「スマホ所持」は「持たせるべき」？「中学生まで待つべき」？",
+          desc: "高学年になると増えるスマートフォンの所持について、メリットとリスクを比較しよう。",
+          stanceA: "小学生でもスマホを持たせるほうがよい",
+          stanceB: "スマホは中学生まで待つほうがよい",
+          opinionsA: ["GPS機能や連絡手段があることで、登下校や習い事の際の防犯・防災に役立つから。", "災害時に家族と連絡を取り合うための大切な手段になるから。", "早い段階から正しい使い方を親と一緒に学ぶほうが安全だから。"],
+          opinionsB: ["SNSでのいじめやネット依存、課金トラブルに巻き込まれる危険が高いから。", "連絡や防犯だけなら、キッズ携帯やGPS端末で十分対応できるから。", "睡眠時間や勉強時間が削られ、生活リズムが乱れやすいから。"]
+        },
+        {
+          title: "日本の伝統文化は「現代風にアレンジする」？「昔ながらの形を守る」？",
+          desc: "和菓子や着物、伝統工芸などの文化を未来へ受け継ぐ方法について意見を出そう。",
+          stanceA: "現代風にアレンジして広めるほうがよい",
+          stanceB: "昔ながらの本物の形を守り伝えるほうがよい",
+          opinionsA: ["現代の生活スタイルや好みに合わせてアレンジすることで、若い世代や海外の人にも興味を持ってもらえるから。", "時代に合わせて変化してきたからこそ、今まで伝統が生き残ってきたから。", "新しいアイデアを取り入れることで、職人の活躍の場が広がるから。"],
+          opinionsB: ["形を変えすぎてしまうと、本来の歴史や込められた意味、伝統の技が失われてしまうから。", "昔ながらの本物のよさをそのまま守り伝えることにこそ価値があるから。", "アレンジは新しいジャンルとして分け、伝統そのものは変えるべきではないから。"]
+        },
+        {
+          title: "給食の配膳は「最初に自分で量を調整する」？「全員同じ量を配る」？",
+          desc: "食品ロス（食べ残し）を減らし栄養バランスを保つために、どのような配膳方法がよいか考えよう。",
+          stanceA: "最初に自分で量を調整できるようにする",
+          stanceB: "全員同じ量を配るようにする",
+          opinionsA: ["自分の食べられる量に調整できれば、無理なく完食できて食べ残しが大幅に減るから。", "たくさん食べたい人は増やせるので、みんなが満足できるから。", "食べ物を大切にする意識が高まるから。"],
+          opinionsB: ["苦手な食べ物を最初から減らしてしまうと、栄養バランスが偏るから。", "一口でも食べてみることで、苦手だったものが食べられるようになる経験が大切だから。", "配膳に時間がかかり、給食の時間が短くなってしまうから。"]
+        },
+        {
+          title: "学校の服装は「標準服（制服）」と「私服」どっちがいい？",
+          desc: "服装のルールについて、標準服と私服それぞれのよさを比べて話し合おう。",
+          stanceA: "標準服（制服）があるほうがよい",
+          stanceB: "私服で登校するほうがよい",
+          opinionsA: ["標準服があれば毎朝服を選ぶ手間がなく、服装による経済的な差も目立たないから。", "学校の代表としての自覚が芽生え、気持ちの切り替えができるから。", "フォーマルな場面でも使えて便利だから。"],
+          opinionsB: ["私服なら気温や体調に合わせて自由に調整でき、動きやすい服を選べるから。", "それぞれの個性や好みを表現する自由が尊重されるべきだから。", "成長が早い小学生には、標準服を買い替える費用が負担になるから。"]
+        },
+        {
+          title: "地域の自然環境を守るなら「ルールによる規制」と「体験イベント」どっちが効果的？",
+          desc: "川や森の自然を守るために、ルールで守る方法と親しみを育てる方法のどちらが大切か考えよう。",
+          stanceA: "ルールや規制を厳しくするほうが効果的",
+          stanceB: "自然に触れる体験イベントを増やすほうが効果的",
+          opinionsA: ["ポイ捨て禁止や立ち入り制限などのルールを明確にしないと、今ある自然がすぐ壊されてしまうから。", "全員が守るべき基準をつくることで、確実な保護につながるから。", "マナー違反を防ぐには厳しさも必要だから。"],
+          opinionsB: ["実際に自然の中で遊んだり観察したりする体験を通して、『守りたい』という心を育てるほうが長く続くから。", "禁止ばかりでは自然への関心が薄れてしまうから。", "子どもたちが好きになれば、家族や地域全体で大切にするようになるから。"]
+        },
+        {
+          title: "グループ学習のリーダーは「立候補」と「交代制」どっちがいい？",
+          desc: "話合いや調べ学習のリーダーの決め方について、それぞれのメリットを話し合おう。",
+          stanceA: "立候補で決めるほうがよい",
+          stanceB: "交代制で全員が経験するほうがよい",
+          opinionsA: ["立候補ならやる気と責任感を持った人がなるので、グループが活発にまとまるから。", "得意な人がリーダーシップを発揮することで、活動の質が高まるから。", "無理にやらされる負担がないから。"],
+          opinionsB: ["交代制にすれば、普段おとなしい人もリーダーを経験して成長するチャンスが得られるから。", "一部の人だけに仕事や負担が集中するのを防げるから。", "全員がリーダーの大変さを知ることで、協力する姿勢が育つから。"]
+        }
+      ],
+      6: [
+        {
+          title: "プラスチックごみを減らすために「使い捨て製品を禁止する」？「分別とリサイクルを徹底する」？",
+          desc: "国語『「永遠のごみ」プラスチック』の学習を踏まえ、現実的な対策について議論しよう。",
+          stanceA: "使い捨てプラスチック製品を禁止すべき",
+          stanceB: "分別とリサイクルの徹底で対策すべき",
+          opinionsA: ["自然界で分解されないプラスチックを減らすには、マイボトルやマイバッグを徹底する強いルールが必要だから。", "一人ひとりが意識を変えるきっかけになり、環境問題の解決に直結するから。", "代替品（紙や金属など）を使う工夫が広がるから。"],
+          opinionsB: ["衛生面や医療・防災の場面など、使い捨てプラスチックが必要な場面も多く、一律禁止は不便すぎるから。", "禁止するよりも、正しい分別とリサイクル率を高める仕組みをつくるほうが現実的だから。", "急な禁止は生活やお店に大きな負担をかけるから。"]
+        },
+        {
+          title: "AI（人工知能）が発達する時代でも、人間が『外国語』や『計算』を「学ぶべき」？「AIに任せるべき」？",
+          desc: "翻訳機や計算機が当たり前になった社会で、学校で基礎を学ぶ意義について考えよう。",
+          stanceA: "人間が外国語や計算をしっかり学ぶべき",
+          stanceB: "AIや機械に任せて別の創造的な学びに時間を使うべき",
+          opinionsA: ["自分の言葉で直接話すことで相手の文化や心を深く理解でき、本当の信頼関係が生まれるから。", "基礎的な計算力や論理的思考力がないと、AIが出した答えが正しいか判断できないから。", "機器が使えない場面や緊急時にも自分の力で対応できるから。"],
+          opinionsB: ["簡単な計算や翻訳はAIに任せたほうが正確で速く、人間はもっと創造的な活動に時間を使うべきだから。", "世界中の人とすぐコミュニケーションをとるには、テクノロジーを活用するほうが効率的だから。", "学び方の重点を、暗記から『AIを使いこなす力』へシフトするべきだから。"]
+        },
+        {
+          title: "小学校の卒業制作は「学校に残す記念品」と「個人で持ち帰る作品」どっちがいい？",
+          desc: "6年間の思い出を形にする卒業制作、どのような形にするのが一番よいか話し合おう。",
+          stanceA: "学校に残す記念品をつくるほうがよい",
+          stanceB: "個人で持ち帰る作品をつくるほうがよい",
+          opinionsA: ["学校に残す記念品なら、後輩たちの役に立ち、母校に自分たちの証がずっと残るから。", "学年全員で一つの大きな作品をつくることで、卒業前に最高の団結が生まれるから。", "数年後に学校を訪れたとき、みんなで振り返ることができるから。"],
+          opinionsB: ["個人で持ち帰る作品なら、自分の部屋に飾ったり使ったりして、一生の宝物にできるから。", "一人ひとりの個性や思いを自由に表現できるから。", "学校に置く場所の制限や劣化の心配がないから。"]
+        },
+        {
+          title: "修学旅行の行動計画は「自分たちで決める自由行動」と「ガイド・先生と回る計画」どっちがいい？",
+          desc: "安全面と自主性のバランスを考えながら、修学旅行のあり方について意見を出し合おう。",
+          stanceA: "自分たちで決める自由行動を増やすべき",
+          stanceB: "ガイドさんや先生と回る計画を中心にするべき",
+          opinionsA: ["自分たちでルートや時間を調べて行動することで、計画力や協力する力が大きく伸びるから。", "興味のある見学地をじっくり回ることができ、忘れられない学びになるから。", "最高学年として責任ある行動をとる絶好の機会だから。"],
+          opinionsB: ["見知らぬ土地での自由行動は、迷子や交通トラブル、時間の遅れなどのリスクが高いから。", "ガイドさんや先生と一緒に行動したほうが、歴史や文化の詳しい解説を聞けて学びが深いから。", "安全第一で全員が安心して楽しめる計画にするべきだから。"]
+        },
+        {
+          title: "社会の出来事を知るなら『新聞・テレビ』と『ネットニュース』どっちが信頼できる？",
+          desc: "情報の正確さと速さ、多角的な視点の観点からメディアの選び方を議論しよう。",
+          stanceA: "新聞・テレビのほうが信頼できる",
+          stanceB: "ネットニュースのほうが優れている",
+          opinionsA: ["新聞やテレビは記者や編集部が事実確認を行ってから発信するため、情報の信頼性が高いから。", "自分が興味のない分野の重要なニュースも目に入り、視野が広がるから。", "見出しや構成が整理されていて、出来事の全体像をつかみやすいから。"],
+          opinionsB: ["ネットニュースは速報性が高く、災害時や最新の出来事をリアルタイムで知ることができるから。", "複数の記事や世界中の視点をすぐに検索して比べられるから。", "文字の拡大や音声読み上げなど、誰でもアクセスしやすい工夫があるから。"]
+        },
+        {
+          title: "学級会などで物事を決めるとき「多数決で決める」？「納得するまで対話を続ける」？",
+          desc: "意見が対立したときの決め方として、多数決と対話のあり方について深く考えよう。",
+          stanceA: "多数決で結論を出すほうがよい",
+          stanceB: "全員が納得できるまで対話で第3の案を探すべき",
+          opinionsA: ["全員に平等に1票があり、短時間で納得感のある結論を出せる最も民主的な方法だから。", "一人ひとりが責任を持って意思表示をする仕組みとして優れているから。", "意見が対立して決まらないときに、前に進むために欠かせないから。"],
+          opinionsB: ["多数決だけだと、少数派の大切な意見や切実な悩みが切り捨てられてしまうことがあるから。", "まずは全員が納得できる第3の案を探す『対話』を十分に行うべきだから。", "人数が多いグループがいつも有利になってしまう不公平さがあるから。"]
+        },
+        {
+          title: "地域の公園や公共の場での『禁止事項（ルール）』は「減らすべき」？「守るべき」？",
+          desc: "「ボール遊び禁止」「大声禁止」などのルールが多い現状について、安全と自由の観点から話し合おう。",
+          stanceA: "禁止事項を減らして自由に遊べるようにすべき",
+          stanceB: "安全と迷惑防止のためにルールを守るべき",
+          opinionsA: ["禁止ばかりだと子どもが自由に工夫して遊ぶ機会が奪われ、ルールを守ることだけが目的になってしまうから。", "失敗や小さな危険を経験することで、自分で安全を判断する力が育つから。", "みんなで譲り合って使うマナーを話し合うほうが建設的だから。"],
+          opinionsB: ["ルールがあることで、小さな子どもや高齢者も含めたすべての利用者の安全が守られているから。", "近隣住民との騒音や破損のトラブルを防ぎ、公園そのものを存続させるために必要だから。", "最低限のルールがあるからこそ、安心して利用できるから。"]
+        },
+        {
+          title: "AI時代に小学生が一番伸ばすべき力は「共感・対話力」と「プログラミング・専門知識」どっち？",
+          desc: "ロボットやAIと共存する未来に向けて、どのような力を身につけるべきか議論しよう。",
+          stanceA: "人の気持ちに寄り添う共感・対話力が一番重要",
+          stanceB: "AIを使いこなすプログラミング・専門知識が一番重要",
+          opinionsA: ["人の気持ちに寄り添い、チームで協力して新しい価値を生み出す力は、AIには真似できない人間ならではの強みだから。", "どんな時代になっても、人と人との信頼関係がすべての仕事の土台になるから。", "相手の立場に立って考える共感力が、よりよい社会をつくるから。"],
+          opinionsB: ["テクノロジーの仕組みを理解し、AIを正しく設計・管理する専門知識がないと時代に取り残されるから。", "論理的に問題解決をするプログラミング的思考は、あらゆる分野で武器になるから。", "新しい技術を恐れずに使いこなすスキルこそが将来の選択肢を広げるから。"]
+        },
+        {
+          title: "お世話になった人への感謝は『言葉で直接伝える』のと『手紙や形に残す』のどっちが大切？",
+          desc: "卒業や節目の場面で感謝を伝えるとき、一番心が伝わる方法について考えよう。",
+          stanceA: "言葉で直接伝えるほうが大切",
+          stanceB: "手紙や形に残して伝えるほうが大切",
+          opinionsA: ["直接顔を見て声で伝えることで、表情や声のトーンから一番ストレートに気持ちが伝わるから。", "その場で相手と喜びや感謝を分かち合うことができるから。", "勇気を出して言葉にすることに大きな意味があるから。"],
+          opinionsB: ["手紙や形に残すことで、緊張してうまく話せなくても自分の思いを整理して丁寧に伝えられるから。", "相手が後から何度も読み返すことができ、ずっと心に残る宝物になるから。", "普段恥ずかしくて言えない感謝も、文章なら素直に表現できるから。"]
+        },
+        {
+          title: "地球環境を守るためには『個人の心がけ』と『国や企業のルールづくり』どっちが重要？",
+          desc: "「イースター島にはなぜ森林がないのか」の学びも生かし、持続可能な社会をつくる鍵を考えよう。",
+          stanceA: "一人ひとりの個人の心がけが一番重要",
+          stanceB: "国や企業のルールづくりが一番重要",
+          opinionsA: ["一人ひとりの毎日の選択や行動が変わらなければ、どんな法律をつくっても社会全体は変わらないから。", "消費者が環境にやさしい商品を選ぶようになれば、企業も自然と変わっていくから。", "身近な節電やごみ削減の積み重ねが大きな力になるから。"],
+          opinionsB: ["個人の努力だけでは限界があり、国や企業が法律や技術で大きな仕組みを変えるほうが圧倒的に効果が高いから。", "環境に配慮した製品を安く手に入れられる社会システムをつくることが先決だから。", "ルールで基準を決めることで、全員が公平に取り組めるようになるから。"]
+        }
+      ]
+    };
+
+    // =========================================================================
+    // 3. 学年別漢字変換辞書（1年〜6年の配当漢字＋音訓・送り仮名・熟語・カタカナ）
+    //    g: その漢字（または熟語）の最高配当学年（1〜6）
+    // =========================================================================
+    const KANJI_DICT = [
+      // 「一」の音訓・送り仮名
+      { yomi: "いち", word: "一", g: 1 },
+      { yomi: "いつ", word: "一", g: 1 },
+      { yomi: "ひと", word: "一", g: 1 },
+      { yomi: "ひとつ", word: "一つ", g: 1 },
+      { yomi: "ひとり", word: "一人", g: 1 },
+      { yomi: "いちばん", word: "一番", g: 2 },
+      { yomi: "いっしょ", word: "一しょ", g: 1 },
+      { yomi: "いっしょう", word: "一生", g: 1 },
+      // 1年配当漢字
+      { yomi: "に", word: "二", g: 1 }, { yomi: "ふたつ", word: "二つ", g: 1 }, { yomi: "ふたり", word: "二人", g: 1 },
+      { yomi: "さん", word: "三", g: 1 }, { yomi: "みっつ", word: "三つ", g: 1 },
+      { yomi: "よん", word: "四", g: 1 }, { yomi: "し", word: "四", g: 1 }, { yomi: "よっつ", word: "四つ", g: 1 },
+      { yomi: "ご", word: "五", g: 1 }, { yomi: "いつつ", word: "五つ", g: 1 },
+      { yomi: "ろく", word: "六", g: 1 }, { yomi: "むっつ", word: "六つ", g: 1 },
+      { yomi: "なな", word: "七", g: 1 }, { yomi: "しち", word: "七", g: 1 }, { yomi: "ななつ", word: "七つ", g: 1 },
+      { yomi: "はち", word: "八", g: 1 }, { yomi: "やっつ", word: "八つ", g: 1 },
+      { yomi: "きゅう", word: "九", g: 1 }, { yomi: "く", word: "九", g: 1 }, { yomi: "ここのつ", word: "九つ", g: 1 },
+      { yomi: "じゅう", word: "十", g: 1 }, { yomi: "とお", word: "十", g: 1 },
+      { yomi: "ひゃく", word: "百", g: 1 }, { yomi: "せん", word: "千", g: 1 }, { yomi: "まん", word: "万", g: 1 }, { yomi: "えん", word: "円", g: 1 },
+      { yomi: "ひと", word: "人", g: 1 }, { yomi: "にん", word: "人", g: 1 }, { yomi: "じん", word: "人", g: 1 },
+      { yomi: "ひ", word: "日", g: 1 }, { yomi: "にち", word: "日", g: 1 }, { yomi: "まいにち", word: "毎日", g: 2 },
+      { yomi: "つき", word: "月", g: 1 }, { yomi: "がつ", word: "月", g: 1 }, { yomi: "げつ", word: "月", g: 1 },
+      { yomi: "ひ", word: "火", g: 1 }, { yomi: "か", word: "火", g: 1 },
+      { yomi: "みず", word: "水", g: 1 }, { yomi: "すい", word: "水", g: 1 },
+      { yomi: "き", word: "木", g: 1 }, { yomi: "もく", word: "木", g: 1 },
+      { yomi: "きん", word: "金", g: 1 }, { yomi: "おかね", word: "お金", g: 1 },
+      { yomi: "つち", word: "土", g: 1 }, { yomi: "ど", word: "土", g: 1 },
+      { yomi: "やま", word: "山", g: 1 }, { yomi: "さん", word: "山", g: 1 },
+      { yomi: "かわ", word: "川", g: 1 }, { yomi: "た", word: "田", g: 1 }, { yomi: "たんぼ", word: "田んぼ", g: 1 },
+      { yomi: "もり", word: "森", g: 1 }, { yomi: "はやし", word: "林", g: 1 },
+      { yomi: "はな", word: "花", g: 1 }, { yomi: "くさ", word: "草", g: 1 }, { yomi: "たけ", word: "竹", g: 1 },
+      { yomi: "いし", word: "石", g: 1 }, { yomi: "かい", word: "貝", g: 1 }, { yomi: "むし", word: "虫", g: 1 },
+      { yomi: "いぬ", word: "犬", g: 1 }, { yomi: "そら", word: "空", g: 1 }, { yomi: "あめ", word: "雨", g: 1 },
+      { yomi: "てん", word: "天", g: 1 }, { yomi: "てんき", word: "天気", g: 1 },
+      { yomi: "き", word: "気", g: 1 }, { yomi: "げんき", word: "元気", g: 1 }, { yomi: "きもち", word: "気もち", g: 1 },
+      { yomi: "うえ", word: "上", g: 1 }, { yomi: "じょうず", word: "上手", g: 1 },
+      { yomi: "した", word: "下", g: 1 }, { yomi: "へた", word: "下手", g: 1 },
+      { yomi: "なか", word: "中", g: 1 }, { yomi: "ちゅう", word: "中", g: 1 },
+      { yomi: "そと", word: "外", g: 1 }, { yomi: "みぎ", word: "右", g: 1 }, { yomi: "ひだり", word: "左", g: 1 },
+      { yomi: "おおきい", word: "大きい", g: 1 }, { yomi: "だい", word: "大", g: 1 }, { yomi: "たいせつ", word: "大切", g: 2 },
+      { yomi: "ちいさい", word: "小さい", g: 1 }, { yomi: "しょう", word: "小", g: 1 },
+      { yomi: "め", word: "目", g: 1 }, { yomi: "みみ", word: "耳", g: 1 }, { yomi: "くち", word: "口", g: 1 },
+      { yomi: "て", word: "手", g: 1 }, { yomi: "あし", word: "足", g: 1 }, { yomi: "ちから", word: "力", g: 1 },
+      { yomi: "おと", word: "音", g: 1 }, { yomi: "おんがく", word: "音楽", g: 2 },
+      { yomi: "こえ", word: "声", g: 1 },
+      { yomi: "おとこ", word: "男", g: 1 }, { yomi: "おんな", word: "女", g: 1 },
+      { yomi: "こ", word: "子", g: 1 }, { yomi: "こども", word: "子ども", g: 1 },
+      { yomi: "がっこう", word: "学校", g: 1 }, { yomi: "こう", word: "校", g: 1 },
+      { yomi: "まなぶ", word: "学ぶ", g: 1 }, { yomi: "がくねん", word: "学年", g: 1 },
+      { yomi: "ねん", word: "年", g: 1 }, { yomi: "いちねんせい", word: "一年生", g: 1 },
+      { yomi: "いきる", word: "生きる", g: 1 }, { yomi: "せんせい", word: "先生", g: 1 },
+      { yomi: "さき", word: "先", g: 1 }, { yomi: "なまえ", word: "名前", g: 1 }, { yomi: "まえ", word: "前", g: 1 },
+      { yomi: "ほん", word: "本", g: 1 }, { yomi: "えほん", word: "え本", g: 1 },
+      { yomi: "ぶん", word: "文", g: 1 }, { yomi: "さくぶん", word: "作文", g: 2 },
+      { yomi: "じ", word: "字", g: 1 }, { yomi: "かんじ", word: "漢字", g: 3 },
+      { yomi: "みる", word: "見る", g: 1 }, { yomi: "みえる", word: "見える", g: 1 },
+      { yomi: "いる", word: "入る", g: 1 }, { yomi: "はいる", word: "入る", g: 1 }, { yomi: "いれる", word: "入れる", g: 1 },
+      { yomi: "でる", word: "出る", g: 1 }, { yomi: "だす", word: "出す", g: 1 },
+      { yomi: "たつ", word: "立つ", g: 1 }, { yomi: "やすむ", word: "休む", g: 1 }, { yomi: "やすみ", word: "休み", g: 1 },
+      { yomi: "くるま", word: "車", g: 1 }, { yomi: "ただしい", word: "正しい", g: 1 },
+      { yomi: "はやい", word: "早い", g: 1 }, { yomi: "ゆうがた", word: "夕方", g: 2 },
+      { yomi: "しろい", word: "白い", g: 1 }, { yomi: "あかい", word: "赤い", g: 1 }, { yomi: "あおい", word: "青い", g: 1 },
+      { yomi: "いと", word: "糸", g: 1 }, { yomi: "たま", word: "玉", g: 1 }, { yomi: "おう", word: "王", g: 1 },
+      { yomi: "まち", word: "町", g: 1 }, { yomi: "むら", word: "村", g: 1 },
+
+      // 2年配当漢字
+      { yomi: "かんがえる", word: "考える", g: 2 }, { yomi: "かんがえ", word: "考え", g: 2 },
+      { yomi: "おもう", word: "思う", g: 2 }, { yomi: "おもい", word: "思い", g: 2 },
+      { yomi: "いう", word: "言う", g: 2 }, { yomi: "ことば", word: "言葉", g: 3 },
+      { yomi: "はなす", word: "話す", g: 2 }, { yomi: "はなし", word: "話", g: 2 }, { yomi: "はなしあい", word: "話し合い", g: 2 },
+      { yomi: "きく", word: "聞く", g: 2 }, { yomi: "きこえる", word: "聞こえる", g: 2 },
+      { yomi: "かく", word: "書く", g: 2 }, { yomi: "よむ", word: "読む", g: 2 },
+      { yomi: "しる", word: "知る", g: 2 }, { yomi: "わかる", word: "分かる", g: 2 },
+      { yomi: "つくる", word: "作る", g: 2 }, { yomi: "つかう", word: "使う", g: 2 },
+      { yomi: "たべる", word: "食べる", g: 2 }, { yomi: "たべもの", word: "食べ物", g: 3 },
+      { yomi: "のむ", word: "飲む", g: 3 }, { yomi: "かう", word: "買う", g: 2 },
+      { yomi: "いく", word: "行く", g: 2 }, { yomi: "くる", word: "来る", g: 2 }, { yomi: "かえる", word: "帰る", g: 2 },
+      { yomi: "あるく", word: "歩く", g: 2 }, { yomi: "はしる", word: "走る", g: 2 },
+      { yomi: "あう", word: "会う", g: 2 }, { yomi: "あつまる", word: "集まる", g: 3 },
+      { yomi: "ともだち", word: "友だち", g: 2 }, { yomi: "かぞく", word: "家族", g: 3 },
+      { yomi: "じぶん", word: "自分", g: 2 }, { yomi: "みんな", word: "皆", g: 6 },
+      { yomi: "じかん", word: "時間", g: 2 }, { yomi: "とけい", word: "時計", g: 2 },
+      { yomi: "まいにち", word: "毎日", g: 2 }, { yomi: "きょう", word: "今日", g: 2 },
+      { yomi: "あした", word: "明日", g: 2 }, { yomi: "きのう", word: "昨日", g: 4 },
+      { yomi: "あさ", word: "朝", g: 2 }, { yomi: "ひる", word: "昼", g: 2 }, { yomi: "よる", word: "夜", g: 2 },
+      { yomi: "はる", word: "春", g: 2 }, { yomi: "なつ", word: "夏", g: 2 }, { yomi: "あき", word: "秋", g: 2 }, { yomi: "ふゆ", word: "冬", g: 2 },
+      { yomi: "うみ", word: "海", g: 2 }, { yomi: "いけ", word: "池", g: 2 }, { yomi: "ほし", word: "星", g: 2 },
+      { yomi: "くも", word: "雲", g: 2 }, { yomi: "かぜ", word: "風", g: 2 }, { yomi: "ゆき", word: "雪", g: 2 },
+      { yomi: "ひかり", word: "光", g: 2 }, { yomi: "いろ", word: "色", g: 2 },
+      { yomi: "こころ", word: "心", g: 2 }, { yomi: "からだ", word: "体", g: 2 }, { yomi: "あたま", word: "頭", g: 2 }, { yomi: "かお", word: "顔", g: 2 },
+      { yomi: "いえ", word: "家", g: 2 }, { yomi: "へや", word: "部屋", g: 3 },
+      { yomi: "みち", word: "道", g: 2 }, { yomi: "みせ", word: "店", g: 2 },
+      { yomi: "くに", word: "国", g: 2 }, { yomi: "こくご", word: "国語", g: 2 }, { yomi: "さんすう", word: "算数", g: 2 },
+      { yomi: "りか", word: "理科", g: 2 }, { yomi: "しゃかい", word: "社会", g: 4 },
+      { yomi: "としょしつ", word: "図書室", g: 2 }, { yomi: "きょうしつ", word: "教室", g: 2 },
+      { yomi: "かず", word: "数", g: 2 }, { yomi: "おおい", word: "多い", g: 2 }, { yomi: "すくない", word: "少ない", g: 2 },
+      { yomi: "ながい", word: "長い", g: 2 }, { yomi: "みじかい", word: "短い", g: 3 },
+      { yomi: "たかい", word: "高い", g: 2 }, { yomi: "ひくい", word: "低い", g: 4 },
+      { yomi: "ひろい", word: "広い", g: 2 }, { yomi: "せまい", word: "狭い", g: 6 },
+      { yomi: "あたらしい", word: "新しい", g: 2 }, { yomi: "ふるい", word: "古い", g: 2 },
+      { yomi: "あかるい", word: "明るい", g: 2 }, { yomi: "くらい", word: "暗い", g: 3 },
+      { yomi: "つよい", word: "強い", g: 2 }, { yomi: "よわい", word: "弱い", g: 2 },
+      { yomi: "ちかい", word: "近い", g: 2 }, { yomi: "とおい", word: "遠い", g: 2 },
+      { yomi: "おなじ", word: "同じ", g: 2 }, { yomi: "ちがう", word: "違う", g: 4 },
+      { yomi: "たすける", word: "助ける", g: 3 }, { yomi: "まもる", word: "守る", g: 3 },
+      { yomi: "こたえる", word: "答える", g: 2 }, { yomi: "こたえ", word: "答え", g: 2 },
+
+      // 3年配当漢字
+      { yomi: "いけん", word: "意見", g: 3 }, { yomi: "りゆう", word: "理由", g: 3 },
+      { yomi: "しつもん", word: "質問", g: 5 }, { yomi: "せつめい", word: "説明", g: 4 },
+      { yomi: "きめる", word: "決める", g: 3 }, { yomi: "きまり", word: "決まり", g: 3 },
+      { yomi: "くらべる", word: "比べる", g: 5 }, { yomi: "しらべる", word: "調べる", g: 3 },
+      { yomi: "かんじる", word: "感じる", g: 3 }, { yomi: "かんそう", word: "感想", g: 3 },
+      { yomi: "つたえる", word: "伝える", g: 4 }, { yomi: "つたわる", word: "伝わる", g: 4 },
+      { yomi: "すすむ", word: "進む", g: 3 }, { yomi: "はたらく", word: "働く", g: 4 },
+      { yomi: "あそぶ", word: "遊ぶ", g: 3 }, { yomi: "あそび", word: "遊び", g: 3 },
+      { yomi: "うごく", word: "動く", g: 3 }, { yomi: "うんどう", word: "運動", g: 3 },
+      { yomi: "しごと", word: "仕事", g: 3 }, { yomi: "べんきょう", word: "勉強", g: 3 },
+      { yomi: "しゅくだい", word: "宿題", g: 3 }, { yomi: "じゅぎょう", word: "授業", g: 5 },
+      { yomi: "きゅうしょく", word: "給食", g: 4 }, { yomi: "えんそく", word: "遠足", g: 2 },
+      { yomi: "あんぜん", word: "安全", g: 3 }, { yomi: "あんしん", word: "安心", g: 4 },
+      { yomi: "だいじ", word: "大事", g: 3 }, { yomi: "ひつよう", word: "必要", g: 4 },
+      { yomi: "べんり", word: "便利", g: 4 }, { yomi: "ふべん", word: "不便", g: 4 },
+      { yomi: "たのしい", word: "楽しい", g: 3 }, { yomi: "たのしみ", word: "楽しみ", g: 3 },
+      { yomi: "うれしい", word: "嬉しい", g: 6 }, { yomi: "かなしい", word: "悲しい", g: 3 },
+      { yomi: "むずかしい", word: "難しい", g: 6 }, { yomi: "やさしい", word: "優しい", g: 6 },
+      { yomi: "はやい", word: "速い", g: 3 }, { yomi: "おそい", word: "遅い", g: 6 },
+      { yomi: "おもい", word: "重い", g: 3 }, { yomi: "かるい", word: "軽い", g: 3 },
+      { yomi: "あつい", word: "暑い", g: 3 }, { yomi: "さむい", word: "寒い", g: 3 },
+      { yomi: "いのち", word: "命", g: 3 }, { yomi: "せかい", word: "世界", g: 3 },
+      { yomi: "ちきゅう", word: "地球", g: 3 }, { yomi: "しぜん", word: "自然", g: 4 },
+      { yomi: "どうぶつ", word: "動物", g: 3 }, { yomi: "しょくぶつ", word: "植物", g: 3 },
+      { yomi: "もの", word: "物", g: 3 }, { yomi: "こと", word: "事", g: 3 },
+      { yomi: "ばしょ", word: "場所", g: 3 }, { yomi: "ところ", word: "所", g: 3 },
+      { yomi: "とき", word: "時", g: 2 }, { yomi: "たび", word: "旅", g: 3 },
+
+      // 4・5・6年配当漢字
+      { yomi: "たちば", word: "立場", g: 4 }, { yomi: "ぐたいれい", word: "具体例", g: 4 },
+      { yomi: "けいけん", word: "経験", g: 5 }, { yomi: "じじつ", word: "事実", g: 4 },
+      { yomi: "せいかつ", word: "生活", g: 4 }, { yomi: "きょうりょく", word: "協力", g: 4 },
+      { yomi: "どりょく", word: "努力", g: 4 }, { yomi: "せいちょう", word: "成長", g: 4 },
+      { yomi: "けんこう", word: "健康", g: 4 }, { yomi: "きけん", word: "危険", g: 5 },
+      { yomi: "かんきょう", word: "環境", g: 5 }, { yomi: "もんだい", word: "問題", g: 4 },
+      { yomi: "かいけつ", word: "解決", g: 5 }, { yomi: "くふう", word: "工夫", g: 4 },
+      { yomi: "じゆう", word: "自由", g: 4 }, { yomi: "へいわ", word: "平和", g: 4 },
+      { yomi: "びょうどう", word: "平等", g: 4 }, { yomi: "こうへい", word: "公平", g: 5 },
+      { yomi: "せきにん", word: "責任", g: 5 }, { yomi: "しんらい", word: "信頼", g: 6 },
+      { yomi: "かんしゃ", word: "感謝", g: 5 }, { yomi: "そんちょう", word: "尊重", g: 6 },
+      { yomi: "ぎろん", word: "議論", g: 6 }, { yomi: "こんきょ", word: "根拠", g: 6 },
+      { yomi: "しゅちょう", word: "主張", g: 5 }, { yomi: "はんろん", word: "反論", g: 6 },
+      { yomi: "きょうかん", word: "共感", g: 4 }, { yomi: "たいわ", word: "対話", g: 3 },
+      { yomi: "みらい", word: "未来", g: 4 }, { yomi: "れきし", word: "歴史", g: 6 },
+      { yomi: "ぶんか", word: "文化", g: 3 }, { yomi: "でんとう", word: "伝統", g: 5 },
+      { yomi: "じょうほう", word: "情報", g: 5 }, { yomi: "ぎじゅつ", word: "技術", g: 5 },
+      { yomi: "そつぎょう", word: "卒業", g: 4 }, { yomi: "しゅうがくりょこう", word: "修学旅行", g: 5 }
+    ];
+
+    // =========================================================================
+    // 4. 12キーかなパネルデータ（トグル＆フリック両対応）
+    // =========================================================================
+    const KANA_KEYS = [
+      { id: 'a',  chars: ['あ', 'い', 'う', 'え', 'お'], label: 'あ', sub: 'いうえお' },
+      { id: 'ka', chars: ['か', 'き', 'く', 'け', 'こ'], label: 'か', sub: 'きくけこ' },
+      { id: 'sa', chars: ['さ', 'し', 'す', 'せ', 'そ'], label: 'さ', sub: 'しすせそ' },
+      { id: 'ta', chars: ['た', 'ち', 'つ', 'て', 'と'], label: 'た', sub: 'ちつてと' },
+      { id: 'na', chars: ['な', 'に', 'ぬ', 'ね', 'の'], label: 'な', sub: 'にぬねの' },
+      { id: 'ha', chars: ['は', 'ひ', 'ふ', 'へ', 'ほ'], label: 'は', sub: 'ひふへほ' },
+      { id: 'ma', chars: ['ま', 'み', 'む', 'め', 'も'], label: 'ま', sub: 'みむめも' },
+      { id: 'ya', chars: ['や', '（', 'ゆ', '）', 'よ'], label: 'や', sub: 'ゆ・よ' },
+      { id: 'ra', chars: ['ら', 'り', 'る', 'れ', 'ろ'], label: 'ら', sub: 'りるれろ' },
+      { id: 'mod', type: 'mod', label: '゛゜小', sub: 'へんかん' },
+      { id: 'wa', chars: ['わ', 'を', 'ん', 'ー', '　'], label: 'わ', sub: 'をんー' },
+      { id: 'punc', chars: ['、', '。', '？', '！', '「'], label: '、。', sub: '？！「' }
+    ];
+
+    // 濁点・半濁点・小文字サイクルマップ
+    const MOD_CYCLE_MAP = {
+      'か': 'が', 'が': 'か', 'き': 'ぎ', 'ぎ': 'き', 'く': 'ぐ', 'ぐ': 'く', 'け': 'げ', 'げ': 'け', 'こ': 'ご', 'ご': 'こ',
+      'さ': 'ざ', 'ざ': 'さ', 'し': 'じ', 'じ': 'し', 'す': 'ず', 'ず': 'す', 'せ': 'ぜ', 'ぜ': 'せ', 'そ': 'ぞ', 'ぞ': 'そ',
+      'た': 'だ', 'だ': 'た', 'ち': 'ぢ', 'ぢ': 'ち', 'つ': 'っ', 'っ': 'づ', 'づ': 'つ', 'て': 'で', 'で': 'て', 'と': 'ど', 'ど': 'と',
+      'は': 'ば', 'ば': 'ぱ', 'ぱ': 'は', 'ひ': 'び', 'び': 'ぴ', 'ぴ': 'ひ', 'ふ': 'ぶ', 'ぶ': 'ぷ', 'ぷ': 'ふ',
+      'へ': 'べ', 'べ': 'ぺ', 'ぺ': 'へ', 'ほ': 'ぼ', 'ぼ': 'ぽ', 'ぽ': 'ほ',
+      'あ': 'ぁ', 'ぁ': 'あ', 'い': 'ぃ', 'ぃ': 'い', 'う': 'ぅ', 'ぅ': 'ヴ', 'ヴ': 'う', 'え': 'ぇ', 'ぇ': 'え', 'お': 'ぉ', 'ぉ': 'お',
+      'や': 'ゃ', 'ゃ': 'や', 'ゆ': 'ゅ', 'ゅ': 'ゆ', 'よ': 'ょ', 'ょ': 'よ', 'わ': 'ゎ', 'ゎ': 'わ',
+      '「': '」', '」': '「', '（': '）', '）': '（'
+    };
+
+    // =========================================================================
+    // 5. アプリ状態管理
+    // =========================================================================
+    const state = {
+      grade: 1,
+      themeIndex: 0,
+      step: 1,
+      stance: null,           // 'A' | 'B' | null
+      paperSize: 200,         // 初期値は200字（20×10）、300字（20×15）、400字（20×20）
+      studentName: "",
+      essayText: "",
+      cursorIndex: 0,         // essayText内の挿入位置（0〜essayText.length）
+      inputTarget: "essay",   // 'essay' | 'name'
+      kanaPanelOpen: false,
+      kanaPanelSide: "right", // 初期設定：右端 ('right' | 'left')
+      lastToggleKey: null,
+      lastToggleTime: 0,
+      lastToggleIndex: 0,
+      reflectionRatings: [null, null, null, null],
+      reflectionText: "",
+      thoughtChange: "",
+      speechTimerDuration: 60,
+      speechTimerSec: 60,
+      speechTimerInterval: null,
+      speechTimerRunning: false
+    };
+
+    // =========================================================================
+    // 6. ページ切り替え & 学年別UI適用
+    // =========================================================================
+    function showPage(pageId) {
+      stopSpeechTimer();
+      ['page-top', 'page-themes', 'page-workspace'].forEach(id => {
+        const el = document.getElementById(id);
+        if (id === pageId) {
+          el.classList.remove('hidden');
+          el.classList.remove('animate-pop');
+          void el.offsetWidth;
+          el.classList.add('animate-pop');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    function selectGrade(grade) {
+      state.grade = grade;
+      const ui = GRADE_UI[grade];
+
+      const stage = document.getElementById('app-stage');
+      stage.style.setProperty('--grade-bg', ui.bg);
+      stage.style.setProperty('--grade-border', ui.border);
+      stage.style.setProperty('--grade-accent', ui.accent);
+
+      applyGradeTexts(grade);
+      renderThemesList();
+      showPage('page-themes');
+    }
+
+    function applyGradeTexts(grade) {
+      const ui = GRADE_UI[grade];
+
+      // 2ページ目
+      document.getElementById('btn-back-top').textContent = ui.backTop;
+      document.getElementById('themes-grade-badge').textContent = ui.name;
+      document.getElementById('themes-page-title').textContent = ui.themesTitle;
+      document.getElementById('random-btn-label').textContent = ui.randomBtn;
+
+      // 3ページ目ヘッダー・タブ
+      document.getElementById('ws-back-themes-btn').textContent = ui.backThemes;
+      document.getElementById('ws-grade-badge').textContent = ui.name;
+      document.getElementById('ws-stance-caption').textContent = ui.stanceCaption;
+
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById(`tab-label-${i}`).textContent = ui.tabs[i - 1];
+      }
+
+      // ①
+      document.getElementById('s1-badge').textContent = ui.s1Badge;
+      document.getElementById('s1-choose-prompt').textContent = ui.s1Prompt;
+      document.getElementById('s1-next-btn').textContent = ui.s1Next;
+
+      // ②
+      document.getElementById('s2-heading').textContent = ui.s2Heading;
+      document.getElementById('s2-sub').textContent = ui.s2Sub;
+      document.getElementById('s2-choose-A-btn').textContent = ui.s2ChooseBtn;
+      document.getElementById('s2-choose-B-btn').textContent = ui.s2ChooseBtn;
+      document.getElementById('s2-prev-btn').textContent = ui.s2Prev;
+      document.getElementById('s2-next-btn').textContent = ui.s2Next;
+
+      // ③
+      document.getElementById('s3-increase-btn').textContent = ui.s3IncreaseBtn;
+      document.getElementById('s3-template-btn').textContent = ui.s3TemplateBtn;
+      document.getElementById('s3-clear-btn').textContent = ui.s3ClearBtn;
+      document.getElementById('s3-name-label').textContent = ui.s3NameLabel;
+      document.getElementById('student-name-input').placeholder = ui.s3NamePlaceholder;
+      document.getElementById('s3-paper-note').textContent = ui.s3PaperNote;
+      document.getElementById('s3-prev-btn').textContent = ui.s3Prev;
+      document.getElementById('s3-analyze-btn').textContent = ui.s3Next;
+
+      // ④
+      document.getElementById('s4-heading').textContent = ui.s4Heading;
+      document.getElementById('s4-sub').textContent = ui.s4Sub;
+      document.getElementById('s4-recheck-btn').textContent = ui.s4Recheck;
+      document.getElementById('s4-my-essay-label').textContent = ui.s4MyEssay;
+      document.getElementById('s4-edit-btn').textContent = ui.s4EditBtn;
+      document.getElementById('s4-prev-btn').textContent = ui.s4Prev;
+      document.getElementById('s4-next-btn').textContent = ui.s4Next;
+
+      // ⑤
+      document.getElementById('s5-heading').textContent = ui.s5Heading;
+      document.getElementById('s5-sub').textContent = ui.s5Sub;
+      document.getElementById('s5-c1-badge').textContent = ui.s5C1Badge;
+      document.getElementById('s5-c1-title').textContent = ui.s5C1Title;
+      document.getElementById('s5-c1-tip').textContent = ui.s5C1Tip;
+      document.getElementById('s5-c2-badge').textContent = ui.s5C2Badge;
+      document.getElementById('s5-c2-title').textContent = ui.s5C2Title;
+      document.getElementById('s5-c2-tip').textContent = ui.s5C2Tip;
+      document.getElementById('s5-c3-badge').textContent = ui.s5C3Badge;
+      document.getElementById('s5-c3-title').textContent = ui.s5C3Title;
+      document.getElementById('s5-c3-tip').textContent = ui.s5C3Tip;
+      document.getElementById('s5-prev-btn').textContent = ui.s5Prev;
+      document.getElementById('s5-next-btn').textContent = ui.s5Next;
+      document.getElementById('speech-timer-reset-btn').textContent = grade <= 2 ? "もどす" : "リセット";
+
+      // ⑥
+      document.getElementById('s6-heading').textContent = ui.s6Heading;
+      document.getElementById('s6-sub').textContent = ui.s6Sub;
+      document.getElementById('s6-name-caption').textContent = ui.s6NameCaption;
+      document.getElementById('s6-check-title').textContent = ui.s6CheckTitle;
+      document.getElementById('s6-write-title').textContent = ui.s6WriteTitle;
+      document.getElementById('s6-write-hint').textContent = ui.s6WriteHint;
+      document.getElementById('reflection-textarea').placeholder = ui.s6Placeholder;
+      document.getElementById('s6-change-label').textContent = ui.s6ChangeLabel;
+      document.getElementById('tc-btn-1').textContent = ui.s6Change1;
+      document.getElementById('tc-btn-2').textContent = ui.s6Change2;
+      document.getElementById('s6-prev-btn').textContent = ui.s6Prev;
+      document.getElementById('s6-other-theme-btn').textContent = ui.s6OtherTheme;
+      document.getElementById('s6-finish-btn').textContent = ui.s6FinishBtn;
+
+      // モーダル
+      document.getElementById('modal-title').textContent = ui.modalTitle;
+      document.getElementById('save-toast-badge').textContent = ui.savedToast;
+      document.getElementById('save-png-again-btn').textContent = ui.savePngBtn;
+      document.getElementById('print-summary-btn').textContent = ui.printBtn;
+      document.getElementById('modal-close-btn').textContent = ui.closeBtn;
+    }
+
+    // =========================================================================
+    // 7. 2ページ目：テーマ一覧描画
+    // =========================================================================
+    function renderThemesList() {
+      const themes = THEMES_BY_GRADE[state.grade];
+      const grid = document.getElementById('themes-grid');
+      const ui = GRADE_UI[state.grade];
+
+      grid.innerHTML = themes.map((t, idx) => {
+        const num = String(idx + 1).padStart(2, '0');
+        return `
+          <button onclick="openThemeWorkspace(${idx})" class="group bg-white hover:bg-white/95 rounded-2xl px-[3%] py-[2%] text-left border-2 transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-3 cursor-pointer min-h-0"
+            style="border-color: ${ui.border};">
+            <span class="flex-shrink-0 w-9 h-9 rounded-xl text-white font-maru font-black text-[clamp(13px,1.3vw,18px)] flex items-center justify-center shadow-2xs"
+              style="background-color: ${ui.accent};">
+              ${num}
+            </span>
+            <span class="font-maru font-bold text-[clamp(12px,1.25vw,17px)] text-slate-800 group-hover:text-black leading-snug line-clamp-2 flex-grow">
+              ${t.title}
+            </span>
+            <span class="flex-shrink-0 text-slate-300 group-hover:text-slate-600 font-bold text-lg">
+              ▶
+            </span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function pickRandomTheme() {
+      const idx = Math.floor(Math.random() * 10);
+      openThemeWorkspace(idx);
+    }
+
+    // =========================================================================
+    // 8. 3ページ目：ワークスペース初期化 & ①〜⑥ステップ切り替え
+    // =========================================================================
+    function openThemeWorkspace(themeIdx) {
+      state.themeIndex = themeIdx;
+      state.stance = null;
+      state.essayText = "";
+      state.cursorIndex = 0;
+      state.paperSize = 200; // 初期値は200字（20字×10行）
+      state.inputTarget = "essay";
+      state.kanaPanelOpen = false;
+      state.kanaPanelSide = "right"; // 初期設定は右端
+      state.reflectionRatings = [null, null, null, null];
+      state.reflectionText = "";
+      state.thoughtChange = "";
+
+      const themeObj = THEMES_BY_GRADE[state.grade][themeIdx];
+
+      document.getElementById('ws-theme-title').textContent = themeObj.title;
+      document.getElementById('s1-theme-text').textContent = themeObj.title;
+      document.getElementById('s1-theme-desc').textContent = themeObj.desc;
+
+      document.querySelectorAll('.label-stance-A').forEach(el => el.textContent = themeObj.stanceA);
+      document.querySelectorAll('.label-stance-B').forEach(el => el.textContent = themeObj.stanceB);
+
+      const suffix = state.grade <= 2 ? "の れい" : (state.grade === 3 ? "の意見のれい" : "の意見の例");
+      document.getElementById('s2-A-title').textContent = `${themeObj.stanceA}${suffix}`;
+      document.getElementById('s2-B-title').textContent = `${themeObj.stanceB}${suffix}`;
+
+      renderStep2Examples(themeObj);
+
+      document.getElementById('student-name-input').value = state.studentName;
+      updateNameDisplays();
+      setPaperSize(200);
+      setKanaPanelSide("right");
+      updateKanaPanelVisibility();
+      updateKanjiCandidates();
+
+      document.getElementById('reflection-textarea').value = "";
+      renderReflectionCriteria();
+      updateThoughtChangeButtons();
+
+      updateStanceUI();
+      setSpeechTimerPreset(60);
+
+      switchStep(1);
+      showPage('page-workspace');
+    }
+
+    function switchStep(stepNum) {
+      state.step = stepNum;
+      stopSpeechTimer();
+
+      const ui = GRADE_UI[state.grade];
+      for (let i = 1; i <= 6; i++) {
+        const tab = document.getElementById(`tab-step-${i}`);
+        const panel = document.getElementById(`panel-step-${i}`);
+        if (i === stepNum) {
+          tab.style.backgroundColor = ui.accent;
+          tab.style.borderColor = ui.accent;
+          tab.style.color = "#FFFFFF";
+          panel.classList.remove('hidden');
+          panel.classList.remove('animate-pop');
+          void panel.offsetWidth;
+          panel.classList.add('animate-pop');
+        } else {
+          tab.style.backgroundColor = "#FFFFFF";
+          tab.style.borderColor = ui.border;
+          tab.style.color = "#334155";
+          panel.classList.add('hidden');
+        }
+      }
+
+      if (stepNum === 3) {
+        state.inputTarget = "essay";
+        updateKanaPanelPlacement();
+        updateInputTargetIndicator();
+        renderGenkouyoushi();
+      } else if (stepNum === 4) {
+        generateCounterArguments();
+      } else if (stepNum === 5) {
+        buildSpeakingAdvice();
+      } else if (stepNum === 6) {
+        state.inputTarget = "reflection";
+        updateKanaPanelPlacement();
+        updateInputTargetIndicator();
+        updateNameDisplays();
+      }
+    }
+
+    function setStance(stance) {
+      state.stance = stance;
+      updateStanceUI();
+    }
+
+    function chooseStanceAndGoStep3(stance) {
+      setStance(stance);
+      if (state.essayText.trim() === "") {
+        insertStarterTemplate();
+      }
+      switchStep(3);
+    }
+
+    function updateStanceUI() {
+      const ui = GRADE_UI[state.grade];
+      const themeObj = THEMES_BY_GRADE[state.grade][state.themeIndex];
+      const wsBadge = document.getElementById('ws-stance-badge');
+      const s1A = document.getElementById('s1-btn-A');
+      const s1B = document.getElementById('s1-btn-B');
+      const s3A = document.getElementById('s3-stance-A');
+      const s3B = document.getElementById('s3-stance-B');
+
+      s1A.className = "px-4 py-3 rounded-2xl font-maru font-black text-[clamp(13px,1.35vw,19px)] border-2 border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100 transition-all cursor-pointer flex items-center justify-center gap-2";
+      s1B.className = "px-4 py-3 rounded-2xl font-maru font-black text-[clamp(13px,1.35vw,19px)] border-2 border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 transition-all cursor-pointer flex items-center justify-center gap-2";
+      s3A.className = "px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] text-slate-600 hover:bg-white cursor-pointer truncate max-w-[155px]";
+      s3B.className = "px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] text-slate-600 hover:bg-white cursor-pointer truncate max-w-[155px]";
+
+      if (state.stance === 'A') {
+        wsBadge.textContent = `A：${themeObj.stanceA}`;
+        wsBadge.className = "px-3 py-0.5 rounded-full font-bold text-[clamp(10px,1.05vw,13px)] bg-rose-600 text-white truncate";
+        s1A.className = "px-4 py-3 rounded-2xl font-maru font-black text-[clamp(13px,1.35vw,19px)] border-2 border-rose-600 bg-rose-600 text-white shadow-md scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2";
+        s3A.className = "px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] bg-rose-600 text-white shadow-2xs cursor-pointer truncate max-w-[155px]";
+      } else if (state.stance === 'B') {
+        wsBadge.textContent = `B：${themeObj.stanceB}`;
+        wsBadge.className = "px-3 py-0.5 rounded-full font-bold text-[clamp(10px,1.05vw,13px)] bg-blue-600 text-white truncate";
+        s1B.className = "px-4 py-3 rounded-2xl font-maru font-black text-[clamp(13px,1.35vw,19px)] border-2 border-blue-600 bg-blue-600 text-white shadow-md scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2";
+        s3B.className = "px-2 py-0.5 rounded-lg font-bold text-[clamp(10px,0.92vw,12px)] bg-blue-600 text-white shadow-2xs cursor-pointer truncate max-w-[155px]";
+      } else {
+        wsBadge.textContent = ui.stanceUnset;
+        wsBadge.className = "px-3 py-0.5 rounded-full font-bold text-[clamp(10px,1.05vw,13px)] bg-slate-200 text-slate-700 truncate";
+      }
+    }
+
+    // =========================================================================
+    // 9. ② いけんのれい
+    // =========================================================================
+    function renderStep2Examples(themeObj) {
+      const ui = GRADE_UI[state.grade];
+      const listA = document.getElementById('s2-A-list');
+      const listB = document.getElementById('s2-B-list');
+
+      listA.innerHTML = themeObj.opinionsA.map((text, i) => `
+        <li class="bg-white rounded-xl p-2.5 border border-rose-200 shadow-2xs flex items-start justify-between gap-2">
+          <div class="flex items-start gap-2">
+            <span class="flex-shrink-0 w-5 h-5 rounded-full bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center mt-0.5">${i + 1}</span>
+            <span class="text-[clamp(11px,1.15vw,15px)] font-medium text-slate-800 leading-snug">${text}</span>
+          </div>
+          <button onclick="adoptExampleIdea('A', ${i})" class="flex-shrink-0 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[clamp(10px,0.95vw,12px)] border border-rose-200 cursor-pointer">
+            ${ui.s2HintBtn}
+          </button>
+        </li>
+      `).join('');
+
+      listB.innerHTML = themeObj.opinionsB.map((text, i) => `
+        <li class="bg-white rounded-xl p-2.5 border border-blue-200 shadow-2xs flex items-start justify-between gap-2">
+          <div class="flex items-start gap-2">
+            <span class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center mt-0.5">${i + 1}</span>
+            <span class="text-[clamp(11px,1.15vw,15px)] font-medium text-slate-800 leading-snug">${text}</span>
+          </div>
+          <button onclick="adoptExampleIdea('B', ${i})" class="flex-shrink-0 px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[clamp(10px,0.95vw,12px)] border border-blue-200 cursor-pointer">
+            ${ui.s2HintBtn}
+          </button>
+        </li>
+      `).join('');
+    }
+
+    function adoptExampleIdea(stance, idx) {
+      setStance(stance);
+      const g = state.grade;
+      const themeObj = THEMES_BY_GRADE[g][state.themeIndex];
+      const chosenClaim = (stance === 'A' ? themeObj.stanceA : themeObj.stanceB).replace(/\s+/g, "");
+      const idea = (stance === 'A' ? themeObj.opinionsA[idx] : themeObj.opinionsB[idx]).replace(/\s+/g, "");
+
+      let draft = "";
+      if (g === 1) {
+        draft = `　わたしは、「${chosenClaim}」とおもいます。\n　りゆうは、${idea}\n　たとえば、`;
+      } else if (g === 2) {
+        draft = `　わたしは、「${chosenClaim}」と思います。\n　りゆうは、${idea}\n　たとえば、`;
+      } else if (g === 3) {
+        draft = `　わたしは、「${chosenClaim}」と思います。\n　理由は、${idea}\n　たとえば、`;
+      } else if (g === 4) {
+        draft = `　私は、「${chosenClaim}」と思います。\n　理由は、${idea}\n　たとえば、`;
+      } else if (g === 5) {
+        draft = `　私は、「${chosenClaim}」と考えます。\n　理由は、${idea}\n　具体的には、`;
+      } else {
+        draft = `　私は、「${chosenClaim}」と考えます。\n　根拠は、${idea}\n　具体的には、`;
+      }
+
+      state.essayText = draft;
+      state.cursorIndex = draft.length;
+      state.inputTarget = "essay";
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+      switchStep(3);
+    }
+
+    // =========================================================================
+    // 10. ③ 作文用紙への直接入力・名前欄連動・200/300/400字
+    // =========================================================================
+    function setPaperSize(size) {
+      state.paperSize = size;
+      const ui = GRADE_UI[state.grade];
+
+      [200, 300, 400].forEach(s => {
+        const btn = document.getElementById(`size-btn-${s}`);
+        if (btn) {
+          if (s === size) {
+            btn.style.backgroundColor = ui.accent;
+            btn.style.color = "#FFFFFF";
+          } else {
+            btn.style.backgroundColor = "transparent";
+            btn.style.color = "#475569";
+          }
+        }
+      });
+
+      const cols = 20;
+      const rows = size / cols; // 200字→10行, 300字→15行, 400字→20行
+      const rowLabel = state.grade <= 3 ? "ぎょう" : "行";
+      document.getElementById('paper-grid-info').textContent = `20字 × ${rows}${rowLabel}（${size}字）`;
+
+      renderGenkouyoushi();
+    }
+
+    function increasePaperSize() {
+      if (state.paperSize < 400) {
+        setPaperSize(state.paperSize + 100);
+      }
+    }
+
+    /**
+     * かきだしのかた（低学年を含む全学年で分かち書きスペースなし・原稿用紙連続表記）
+     */
+    function insertStarterTemplate() {
+      const g = state.grade;
+      const themeObj = THEMES_BY_GRADE[g][state.themeIndex];
+      if (!state.stance) {
+        setStance('A');
+      }
+      const chosenClaim = (state.stance === 'B' ? themeObj.stanceB : themeObj.stanceA).replace(/\s+/g, "");
+
+      let template = "";
+      if (g === 1) {
+        template = `　わたしは、「${chosenClaim}」とおもいます。\n　りゆうは、〜だからです。\n　たとえば、〜ことがあります。\n　だから、「${chosenClaim}」とおもいます。`;
+      } else if (g === 2) {
+        template = `　わたしは、「${chosenClaim}」と思います。\n　りゆうは、〜だからです。\n　たとえば、〜ことがあります。\n　だから、「${chosenClaim}」と思います。`;
+      } else if (g === 3) {
+        template = `　わたしは、「${chosenClaim}」と思います。\n　理由は二つあります。一つ目は、〜だからです。\n　二つ目は、〜だからです。\n　だから、わたしは「${chosenClaim}」と思います。`;
+      } else if (g === 4) {
+        template = `　私は、「${chosenClaim}」と思います。\n　理由は二つあります。一つ目は、〜だからです。たとえば、〜という経験があります。\n　二つ目は、〜だからです。\n　以上の理由から、私は「${chosenClaim}」と思います。`;
+      } else if (g === 5) {
+        template = `　私は、「${chosenClaim}」と考えます。\n　理由は二つあります。一つ目は、〜だからです。たとえば、〜という経験があります。\n　二つ目は、〜だからです。\n　以上の理由から、私は「${chosenClaim}」という立場をとります。`;
+      } else {
+        template = `　私は、「${chosenClaim}」と考えます。\n　根拠は二つあります。第一に、〜だからです。実際に、〜という事実があります。\n　第二に、〜だからです。\n　以上の理由から、私は「${chosenClaim}」と主張します。`;
+      }
+
+      state.essayText = template;
+      state.cursorIndex = template.length;
+      state.inputTarget = "essay";
+      updateInputTargetIndicator();
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    function clearEssay() {
+      state.essayText = "";
+      state.cursorIndex = 0;
+      state.inputTarget = "essay";
+      updateInputTargetIndicator();
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    function setInputTarget(target) {
+      state.inputTarget = target; // 'essay' | 'name' | 'reflection'
+      state.lastToggleKey = null;
+      updateInputTargetIndicator();
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    function updateInputTargetIndicator() {
+      const ind = document.getElementById('kana-target-indicator');
+      if (!ind) return;
+      if (state.inputTarget === 'name') {
+        ind.textContent = state.grade <= 3 ? "なまえに 入力中" : "名前に 入力中";
+        ind.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 truncate";
+      } else if (state.inputTarget === 'reflection') {
+        ind.textContent = state.grade <= 3 ? "ふりかえりに 入力中" : "振り返りに 入力中";
+        ind.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 truncate";
+      } else {
+        ind.textContent = state.grade <= 3 ? "さくぶんに 入力中" : "作文に 入力中";
+        ind.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 truncate";
+      }
+    }
+
+    function handleReflectionInput() {
+      const refEl = document.getElementById('reflection-textarea');
+      if (refEl) {
+        state.reflectionText = refEl.value;
+      }
+      updateKanjiCandidates();
+    }
+
+    function handleNameInput() {
+      const inputEl = document.getElementById('student-name-input');
+      state.studentName = inputEl.value;
+      updateNameDisplays();
+      updateKanjiCandidates();
+    }
+
+    function updateNameDisplays() {
+      const ui = GRADE_UI[state.grade];
+      const nameDisp = document.getElementById('s6-name-display');
+      if (nameDisp) {
+        nameDisp.textContent = state.studentName.trim() ? state.studentName.trim() : ui.s6NameEmpty;
+      }
+    }
+
+    /**
+     * テキストを原稿用紙のマス配列に割り当て、各マスの文字・対応するtextIndex・カーソル位置を計算する
+     */
+    function formatTextToCells(text, totalCells, cols) {
+      const cells = new Array(totalCells).fill(null).map(() => ({
+        ch: "",
+        startIndex: null,
+        endIndex: null
+      }));
+      const kinsoku = ["、", "。", "，", "．", "」", "』", "）", "っ", "ゃ", "ゅ", "ょ", "ァ", "ィ", "ゥ", "ェ", "ォ", "ッ", "ャ", "ュ", "ョ", "ー", "！", "？"];
+      let pos = 0;
+
+      for (let i = 0; i < text.length; i++) {
+        if (pos >= totalCells) break;
+        const ch = text[i];
+
+        if (ch === "\n") {
+          const currentCol = pos % cols;
+          const nextPos = currentCol === 0 ? pos + cols : pos + (cols - currentCol);
+          for (let p = pos; p < Math.min(nextPos, totalCells); p++) {
+            if (cells[p].startIndex === null) {
+              cells[p].startIndex = i;
+              cells[p].endIndex = i + 1;
+            }
+          }
+          pos = nextPos;
+          continue;
+        }
+
+        if (pos % cols === 0 && pos > 0 && kinsoku.includes(ch)) {
+          cells[pos - 1].ch += ch;
+          cells[pos - 1].endIndex = i + 1;
+          continue;
+        }
+
+        cells[pos].ch = ch;
+        cells[pos].startIndex = i;
+        cells[pos].endIndex = i + 1;
+        pos++;
+      }
+
+      return { cells, usedCount: pos };
+    }
+
+    function renderGenkouyoushi() {
+      const container = document.getElementById('genkou-container');
+      const total = state.paperSize;
+      const cols = 20;
+
+      const { cells, usedCount } = formatTextToCells(state.essayText, total, cols);
+      const rawLength = state.essayText.replace(/\n/g, "").length;
+
+      const countEl = document.getElementById('char-count-display');
+      countEl.textContent = `いま ${rawLength} 字 / ${total} 字`;
+      if (usedCount >= total && state.essayText.length > 0) {
+        countEl.classList.add('text-rose-600');
+      } else {
+        countEl.classList.remove('text-rose-600');
+      }
+
+      // カーソルが表示されるべきマス位置を特定
+      let caretCellIdx = Math.min(usedCount, total - 1);
+      let caretAtEndOfCell = false;
+
+      if (state.cursorIndex < state.essayText.length) {
+        for (let idx = 0; idx < total; idx++) {
+          const c = cells[idx];
+          if (c.startIndex !== null && state.cursorIndex >= c.startIndex && state.cursorIndex < c.endIndex) {
+            caretCellIdx = idx;
+            break;
+          }
+        }
+      } else if (usedCount >= total) {
+        caretCellIdx = total - 1;
+        caretAtEndOfCell = true;
+      }
+
+      // かなパネル表示中は文字サイズを少し調整して重なりや過密を防止
+      const fontSizeClass = state.kanaPanelOpen
+        ? "text-[clamp(12px,1.25vw,17px)]"
+        : "text-[clamp(14px,1.5vw,21px)]";
+
+      container.innerHTML = cells.map((cell, idx) => {
+        const isLastCol = (idx + 1) % cols === 0;
+        const rowNum = Math.floor(idx / cols) + 1;
+        const isBlockEnd = rowNum % 5 === 0 && rowNum * cols < total;
+        const showCaret = (state.inputTarget === 'essay' && idx === caretCellIdx);
+        const caretHtml = showCaret
+          ? `<span class="${caretAtEndOfCell ? 'caret-bar-end' : 'caret-bar'}"></span>`
+          : "";
+
+        return `<div onclick="onCellClick(event, ${idx})" class="genkou-cell ${fontSizeClass} ${isLastCol ? 'bg-red-50/30' : ''} ${isBlockEnd ? 'row-sep' : ''}">${escapeHtml(cell.ch)}${caretHtml}</div>`;
+      }).join('');
+    }
+
+    function onCellClick(e, cellIdx) {
+      e.stopPropagation();
+      state.inputTarget = "essay";
+      state.lastToggleKey = null;
+      updateInputTargetIndicator();
+
+      const total = state.paperSize;
+      const { cells } = formatTextToCells(state.essayText, total, 20);
+      const clicked = cells[cellIdx];
+
+      if (clicked && clicked.startIndex !== null) {
+        state.cursorIndex = clicked.startIndex;
+      } else {
+        state.cursorIndex = state.essayText.length;
+      }
+
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+      focusHiddenImeInput();
+    }
+
+    function focusGenkouEnd() {
+      state.inputTarget = "essay";
+      state.lastToggleKey = null;
+      updateInputTargetIndicator();
+      state.cursorIndex = state.essayText.length;
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+      focusHiddenImeInput();
+    }
+
+    function focusHiddenImeInput() {
+      const hidden = document.getElementById('hidden-ime-input');
+      if (hidden) {
+        hidden.value = "";
+        hidden.focus({ preventScroll: true });
+      }
+    }
+
+    // 物理キーボード・PC IME入力対応
+    let isComposing = false;
+    document.addEventListener('compositionstart', (e) => {
+      if (e.target && e.target.id === 'hidden-ime-input') isComposing = true;
+    });
+    document.addEventListener('compositionend', (e) => {
+      if (e.target && e.target.id === 'hidden-ime-input') {
+        isComposing = false;
+        const val = e.target.value;
+        if (val) {
+          insertTextAtCursor(val);
+          e.target.value = "";
+        }
+      }
+    });
+
+    function handleHiddenImeInput(e) {
+      if (isComposing) return;
+      const val = e.target.value;
+      if (val) {
+        insertTextAtCursor(val);
+        e.target.value = "";
+      }
+    }
+
+    function handleHiddenImeKeydown(e) {
+      if (isComposing || state.inputTarget !== 'essay') return;
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        deleteBackwardAtCursor();
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        if (state.cursorIndex < state.essayText.length) {
+          state.essayText = state.essayText.slice(0, state.cursorIndex) + state.essayText.slice(state.cursorIndex + 1);
+          renderGenkouyoushi();
+          updateKanjiCandidates();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        state.cursorIndex = Math.max(0, state.cursorIndex - 1);
+        renderGenkouyoushi();
+        updateKanjiCandidates();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        state.cursorIndex = Math.min(state.essayText.length, state.cursorIndex + 1);
+        renderGenkouyoushi();
+        updateKanjiCandidates();
+      }
+    }
+
+    // =========================================================================
+    // 11. スマホ風12キー「かなパネル」（トグル・フリック両対応＆学年別漢字変換）
+    // =========================================================================
+    function toggleKanaPanel() {
+      state.kanaPanelOpen = !state.kanaPanelOpen;
+      if (state.kanaPanelOpen && state.step === 6) {
+        state.inputTarget = "reflection";
+        updateInputTargetIndicator();
+      }
+      updateKanaPanelVisibility();
+      if (state.step === 3) {
+        renderGenkouyoushi();
+      }
+      updateKanjiCandidates();
+    }
+
+    function updateKanaPanelVisibility() {
+      updateKanaPanelPlacement();
+      const btns = [
+        document.getElementById('kana-panel-toggle-btn'),
+        document.getElementById('s6-kana-panel-toggle-btn')
+      ];
+      btns.forEach(btn => {
+        if (!btn) return;
+        if (state.kanaPanelOpen) {
+          btn.className = "px-3 py-1 rounded-xl font-maru font-bold text-[clamp(10px,0.98vw,13px)] border-2 border-emerald-600 bg-emerald-600 text-white transition-all cursor-pointer flex items-center gap-1 shadow-2xs";
+        } else {
+          btn.className = "px-3 py-1 rounded-xl font-maru font-bold text-[clamp(10px,0.98vw,13px)] border-2 border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1 shadow-2xs";
+        }
+      });
+    }
+
+    function updateKanaPanelPlacement() {
+      const panelBox = document.getElementById('kana-panel-box');
+      const s3Body = document.getElementById('s3-main-body');
+      const s6Slot = document.getElementById('s6-kana-slot');
+      const s6Grid = document.getElementById('s6-content-grid');
+      const s6CriteriaCard = document.getElementById('s6-criteria-card');
+      const s6WriteCard = document.getElementById('s6-write-card');
+      if (!panelBox || !s3Body || !s6Slot) return;
+
+      if (state.step === 6) {
+        if (panelBox.parentElement !== s6Slot) {
+          s6Slot.appendChild(panelBox);
+        }
+        if (state.kanaPanelOpen) {
+          s6Slot.classList.remove('hidden');
+          panelBox.classList.remove('hidden');
+          if (state.kanaPanelSide === 'left') {
+            // 左表示：めあてのチェックの上に重ねて表示
+            s6Slot.className = "absolute left-0 top-0 bottom-0 w-[49%] z-20 flex";
+            panelBox.className = "w-full h-full bg-slate-100/95 backdrop-blur-xs rounded-2xl border-2 border-slate-300 p-2 flex flex-col justify-between shadow-xl";
+            if (s6Grid) s6Grid.className = "grid grid-cols-12 gap-[2%] flex-grow min-w-0 min-h-0 transition-all";
+            if (s6CriteriaCard) s6CriteriaCard.className = "col-span-6 bg-slate-50 rounded-2xl p-[2.5%] border border-slate-200 flex flex-col justify-between min-w-0";
+            if (s6WriteCard) s6WriteCard.className = "col-span-6 bg-slate-50 rounded-2xl p-[2.5%] border border-slate-200 flex flex-col justify-between min-w-0";
+          } else {
+            // 右表示：めあてのチェックを縮めて横に並べる
+            s6Slot.className = "w-[32%] max-w-[310px] min-w-[230px] flex-shrink-0 flex h-full";
+            panelBox.className = "w-full h-full bg-slate-100 rounded-2xl border-2 border-slate-300 p-2 flex flex-col justify-between shadow-md";
+            if (s6Grid) s6Grid.className = "grid grid-cols-12 gap-[1.5%] flex-grow min-w-0 min-h-0 transition-all";
+            if (s6CriteriaCard) s6CriteriaCard.className = "col-span-5 bg-slate-50 rounded-2xl p-[2%] border border-slate-200 flex flex-col justify-between min-w-0";
+            if (s6WriteCard) s6WriteCard.className = "col-span-7 bg-slate-50 rounded-2xl p-[2%] border border-slate-200 flex flex-col justify-between min-w-0";
+          }
+        } else {
+          s6Slot.classList.add('hidden');
+          panelBox.classList.add('hidden');
+          if (s6Grid) s6Grid.className = "grid grid-cols-12 gap-[2%] flex-grow min-w-0 min-h-0 transition-all";
+          if (s6CriteriaCard) s6CriteriaCard.className = "col-span-6 bg-slate-50 rounded-2xl p-[2.5%] border border-slate-200 flex flex-col justify-between min-w-0";
+          if (s6WriteCard) s6WriteCard.className = "col-span-6 bg-slate-50 rounded-2xl p-[2.5%] border border-slate-200 flex flex-col justify-between min-w-0";
+        }
+        renderReflectionCriteria();
+      } else {
+        if (s6Slot) s6Slot.classList.add('hidden');
+        if (panelBox.parentElement !== s3Body) {
+          s3Body.appendChild(panelBox);
+        }
+        const orderClass = state.kanaPanelSide === 'left' ? 'order-1' : 'order-2';
+        if (state.kanaPanelOpen) {
+          panelBox.className = `w-[34%] max-w-[330px] min-w-[240px] flex-shrink-0 bg-slate-100 rounded-2xl border-2 border-slate-300 p-2 flex flex-col justify-between shadow-md ${orderClass}`;
+        } else {
+          panelBox.className = `hidden w-[34%] max-w-[330px] min-w-[240px] flex-shrink-0 bg-slate-100 rounded-2xl border-2 border-slate-300 p-2 flex flex-col justify-between shadow-md ${orderClass}`;
+        }
+      }
+    }
+
+    function setKanaPanelSide(side) {
+      state.kanaPanelSide = side; // 'right' | 'left'
+      const paperWrap = document.getElementById('s3-paper-wrapper');
+      const btnLeft = document.getElementById('kana-side-left');
+      const btnRight = document.getElementById('kana-side-right');
+
+      if (side === 'left') {
+        paperWrap.classList.remove('order-1');
+        paperWrap.classList.add('order-2');
+
+        btnLeft.className = "px-2 py-0.5 rounded-md font-bold text-[11px] bg-emerald-600 text-white cursor-pointer";
+        btnRight.className = "px-2 py-0.5 rounded-md font-bold text-[11px] text-slate-600 cursor-pointer";
+      } else {
+        paperWrap.classList.remove('order-2');
+        paperWrap.classList.add('order-1');
+
+        btnRight.className = "px-2 py-0.5 rounded-md font-bold text-[11px] bg-emerald-600 text-white cursor-pointer";
+        btnLeft.className = "px-2 py-0.5 rounded-md font-bold text-[11px] text-slate-600 cursor-pointer";
+      }
+      updateKanaPanelPlacement();
+    }
+
+    function initKanaKeypad() {
+      const grid = document.getElementById('kana-keypad-grid');
+      if (!grid) return;
+
+      // 4行×3列 + 下段操作キー（1字けす・かいぎょう）
+      let html = KANA_KEYS.map((keyObj, idx) => {
+        const isMod = keyObj.type === 'mod';
+        const bgClass = isMod
+          ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950"
+          : "bg-white hover:bg-slate-50 border-slate-300 text-slate-900";
+        return `
+          <button type="button" data-key-idx="${idx}"
+            class="kana-key rounded-xl border-b-2 ${bgClass} flex flex-col items-center justify-center py-1 px-0.5 shadow-2xs cursor-pointer">
+            <span class="font-maru font-black text-[clamp(14px,1.45vw,19px)] leading-none">${keyObj.label}</span>
+            <span class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">${keyObj.sub}</span>
+          </button>
+        `;
+      }).join('');
+
+      // 最下段の操作ボタン（1じけす・かいぎょう・かくてい）
+      html += `
+        <button type="button" onclick="deleteBackwardAtCursor()" class="kana-key rounded-xl border-b-2 bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-900 font-maru font-black text-[clamp(11px,1.05vw,14px)] py-1.5 cursor-pointer">
+          ⌫ 1じけす
+        </button>
+        <button type="button" onclick="confirmToggleCommit()" class="kana-key rounded-xl border-b-2 bg-slate-200 hover:bg-slate-300 border-slate-400 text-slate-800 font-maru font-bold text-[clamp(11px,1.05vw,14px)] py-1.5 cursor-pointer">
+          → つぎへ
+        </button>
+        <button type="button" onclick="insertNewlineAtCursor()" class="kana-key rounded-xl border-b-2 bg-sky-100 hover:bg-sky-200 border-sky-300 text-sky-900 font-maru font-black text-[clamp(11px,1.05vw,14px)] py-1.5 cursor-pointer">
+          ↵ かいぎょう
+        </button>
+      `;
+
+      grid.innerHTML = html;
+
+      // ポインターイベントでトグル＆フリック両方を処理
+      grid.querySelectorAll('[data-key-idx]').forEach(btn => {
+        const keyIdx = Number(btn.getAttribute('data-key-idx'));
+        const keyObj = KANA_KEYS[keyIdx];
+        attachFlickAndToggleEvents(btn, keyObj);
+      });
+    }
+
+    function attachFlickAndToggleEvents(btn, keyObj) {
+      let startX = 0;
+      let startY = 0;
+      let activePointerId = null;
+      let currentDir = 0; // 0:中央, 1:左, 2:上, 3:右, 4:下
+
+      const popup = document.getElementById('flick-popup');
+
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        activePointerId = e.pointerId;
+        btn.setPointerCapture(e.pointerId);
+        startX = e.clientX;
+        startY = e.clientY;
+        currentDir = 0;
+
+        if (!keyObj.type && keyObj.chars) {
+          showFlickPopup(btn, keyObj.chars, 0);
+        }
+      });
+
+      btn.addEventListener('pointermove', (e) => {
+        if (activePointerId !== e.pointerId || keyObj.type) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 18) {
+          currentDir = 0;
+        } else if (Math.abs(dx) > Math.abs(dy)) {
+          currentDir = dx < 0 ? 1 : 3; // 左:1, 右:3
+        } else {
+          currentDir = dy < 0 ? 2 : 4; // 上:2, 下:4
+        }
+        showFlickPopup(btn, keyObj.chars, currentDir);
+      });
+
+      const endHandler = (e) => {
+        if (activePointerId !== e.pointerId) return;
+        activePointerId = null;
+        popup.classList.add('hidden');
+
+        if (keyObj.type === 'mod') {
+          applyModifierToPrevChar();
+          return;
+        }
+
+        if (currentDir > 0) {
+          // フリック入力
+          state.lastToggleKey = null;
+          const chosen = keyObj.chars[currentDir];
+          if (chosen) insertTextAtCursor(chosen);
+        } else {
+          // トグル入力（同じキーの連続タップ判定）
+          const now = Date.now();
+          if (state.lastToggleKey === keyObj.id && (now - state.lastToggleTime) < 1100) {
+            state.lastToggleIndex = (state.lastToggleIndex + 1) % keyObj.chars.length;
+            replacePrevChar(keyObj.chars[state.lastToggleIndex]);
+          } else {
+            state.lastToggleKey = keyObj.id;
+            state.lastToggleIndex = 0;
+            insertTextAtCursor(keyObj.chars[0]);
+          }
+          state.lastToggleTime = now;
+        }
+      };
+
+      btn.addEventListener('pointerup', endHandler);
+      btn.addEventListener('pointercancel', () => {
+        activePointerId = null;
+        popup.classList.add('hidden');
+      });
+    }
+
+    function showFlickPopup(btn, chars, activeDir) {
+      const popup = document.getElementById('flick-popup');
+      const rect = btn.getBoundingClientRect();
+
+      document.getElementById('flick-center').textContent = chars[0] || "";
+      document.getElementById('flick-left').textContent = chars[1] || "";
+      document.getElementById('flick-up').textContent = chars[2] || "";
+      document.getElementById('flick-right').textContent = chars[3] || "";
+      document.getElementById('flick-down').textContent = chars[4] || "";
+
+      const ids = ['flick-center', 'flick-left', 'flick-up', 'flick-right', 'flick-down'];
+      ids.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (idx === activeDir) {
+          el.classList.add('bg-emerald-500', 'text-white', 'px-1.5', 'rounded-md');
+        } else {
+          el.classList.remove('bg-emerald-500', 'text-white', 'px-1.5', 'rounded-md');
+        }
+      });
+
+      const leftPos = Math.max(8, Math.min(window.innerWidth - 134, rect.left + rect.width / 2 - 63));
+      const topPos = Math.max(8, rect.top - 78);
+      popup.style.left = `${leftPos}px`;
+      popup.style.top = `${topPos}px`;
+      popup.classList.remove('hidden');
+    }
+
+    function confirmToggleCommit() {
+      state.lastToggleKey = null;
+    }
+
+    function insertTextAtCursor(str) {
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        const pos = nameInput.selectionStart ?? nameInput.value.length;
+        const nextVal = nameInput.value.slice(0, pos) + str + nameInput.value.slice(pos);
+        nameInput.value = nextVal;
+        nameInput.setSelectionRange(pos + str.length, pos + str.length);
+        state.studentName = nextVal;
+        updateNameDisplays();
+        updateKanjiCandidates();
+        return;
+      }
+
+      if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        const pos = refInput.selectionStart ?? refInput.value.length;
+        const nextVal = refInput.value.slice(0, pos) + str + refInput.value.slice(pos);
+        refInput.value = nextVal;
+        refInput.setSelectionRange(pos + str.length, pos + str.length);
+        state.reflectionText = nextVal;
+        updateKanjiCandidates();
+        return;
+      }
+
+      // 作文用紙への挿入
+      const before = state.essayText.slice(0, state.cursorIndex);
+      const after = state.essayText.slice(state.cursorIndex);
+      state.essayText = before + str + after;
+      state.cursorIndex += str.length;
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    function replacePrevChar(newCh) {
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        const pos = nameInput.selectionStart ?? nameInput.value.length;
+        if (pos === 0) return;
+        const nextVal = nameInput.value.slice(0, pos - 1) + newCh + nameInput.value.slice(pos);
+        nameInput.value = nextVal;
+        nameInput.setSelectionRange(pos, pos);
+        state.studentName = nextVal;
+        updateNameDisplays();
+        updateKanjiCandidates();
+        return;
+      }
+
+      if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        const pos = refInput.selectionStart ?? refInput.value.length;
+        if (pos === 0) return;
+        const nextVal = refInput.value.slice(0, pos - 1) + newCh + refInput.value.slice(pos);
+        refInput.value = nextVal;
+        refInput.setSelectionRange(pos, pos);
+        state.reflectionText = nextVal;
+        updateKanjiCandidates();
+        return;
+      }
+
+      if (state.cursorIndex === 0) return;
+      state.essayText = state.essayText.slice(0, state.cursorIndex - 1) + newCh + state.essayText.slice(state.cursorIndex);
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    function applyModifierToPrevChar() {
+      state.lastToggleKey = null;
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        const pos = nameInput.selectionStart ?? nameInput.value.length;
+        if (pos === 0) return;
+        const prev = nameInput.value[pos - 1];
+        const nextCh = MOD_CYCLE_MAP[prev];
+        if (nextCh) replacePrevChar(nextCh);
+        return;
+      }
+
+      if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        const pos = refInput.selectionStart ?? refInput.value.length;
+        if (pos === 0) return;
+        const prev = refInput.value[pos - 1];
+        const nextCh = MOD_CYCLE_MAP[prev];
+        if (nextCh) replacePrevChar(nextCh);
+        return;
+      }
+
+      if (state.cursorIndex === 0) return;
+      const prev = state.essayText[state.cursorIndex - 1];
+      const nextCh = MOD_CYCLE_MAP[prev];
+      if (nextCh) replacePrevChar(nextCh);
+    }
+
+    function deleteBackwardAtCursor() {
+      state.lastToggleKey = null;
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        const pos = nameInput.selectionStart ?? nameInput.value.length;
+        if (pos === 0) return;
+        const nextVal = nameInput.value.slice(0, pos - 1) + nameInput.value.slice(pos);
+        nameInput.value = nextVal;
+        nameInput.setSelectionRange(pos - 1, pos - 1);
+        state.studentName = nextVal;
+        updateNameDisplays();
+        updateKanjiCandidates();
+        return;
+      }
+
+      if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        const pos = refInput.selectionStart ?? refInput.value.length;
+        if (pos === 0) return;
+        const nextVal = refInput.value.slice(0, pos - 1) + refInput.value.slice(pos);
+        refInput.value = nextVal;
+        refInput.setSelectionRange(pos - 1, pos - 1);
+        state.reflectionText = nextVal;
+        updateKanjiCandidates();
+        return;
+      }
+
+      if (state.cursorIndex === 0) return;
+      state.essayText = state.essayText.slice(0, state.cursorIndex - 1) + state.essayText.slice(state.cursorIndex);
+      state.cursorIndex--;
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    function insertNewlineAtCursor() {
+      state.lastToggleKey = null;
+      if (state.inputTarget === 'name') return;
+      insertTextAtCursor("\n");
+    }
+
+    /**
+     * ひらがな→カタカナ変換ユーティリティ
+     */
+    function hiraToKata(str) {
+      return str.replace(/[\u3041-\u3096]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+    }
+
+    /**
+     * 学年別漢字変換バーの候補更新
+     * 1年→g<=1、2年→g<=2、…6年→g<=6 の漢字・熟語とカタカナ候補を表示
+     */
+    function updateKanjiCandidates() {
+      const listEl = document.getElementById('kanji-candidates-list');
+      if (!listEl) return;
+
+      let textBeforeCursor = "";
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        const pos = nameInput.selectionStart ?? nameInput.value.length;
+        textBeforeCursor = nameInput.value.slice(0, pos);
+      } else if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        const pos = refInput.selectionStart ?? refInput.value.length;
+        textBeforeCursor = refInput.value.slice(0, pos);
+      } else {
+        textBeforeCursor = state.essayText.slice(0, state.cursorIndex);
+      }
+
+      // カーソル直前の連続するひらがな（最大8文字）を抽出
+      const match = textBeforeCursor.match(/([ぁ-んー]{1,8})$/);
+      if (!match) {
+        listEl.innerHTML = `<span class="text-[10px] text-slate-400">${state.grade}年生の かんじへんかん</span>`;
+        return;
+      }
+
+      const hiraTail = match[1];
+      const candidates = []; // { yomiLen, word, isKanji }
+      const seen = new Set();
+
+      // 長い読みから順にマッチング（例：「いちねんせい」「ひとつ」「いち」など）
+      for (let len = hiraTail.length; len >= 1; len--) {
+        const sub = hiraTail.slice(hiraTail.length - len);
+        for (const entry of KANJI_DICT) {
+          if (entry.g <= state.grade && entry.yomi === sub) {
+            const key = `${len}:${entry.word}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              candidates.push({ yomiLen: len, word: entry.word, isKanji: true });
+            }
+          }
+        }
+      }
+
+      // カタカナ候補も追加（2文字以上または全体）
+      const kataWhole = hiraToKata(hiraTail);
+      if (kataWhole !== hiraTail && !seen.has(`${hiraTail.length}:${kataWhole}`)) {
+        candidates.push({ yomiLen: hiraTail.length, word: kataWhole, isKanji: false });
+      }
+
+      if (candidates.length === 0) {
+        listEl.innerHTML = `<span class="text-[10px] text-slate-400">「${escapeHtml(hiraTail)}」</span>`;
+        return;
+      }
+
+      listEl.innerHTML = candidates.slice(0, 8).map(c => `
+        <button type="button" onclick="applyKanjiConversion(${c.yomiLen}, '${c.word.replace(/'/g, "\\'")}')"
+          class="flex-shrink-0 px-2 py-0.5 rounded-lg font-maru font-bold text-xs border transition-colors cursor-pointer ${c.isKanji ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-slate-900' : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-sky-900'}">
+          ${escapeHtml(c.word)}
+        </button>
+      `).join('');
+    }
+
+    function applyKanjiConversion(yomiLen, replacement) {
+      state.lastToggleKey = null;
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        const pos = nameInput.selectionStart ?? nameInput.value.length;
+        const start = Math.max(0, pos - yomiLen);
+        const nextVal = nameInput.value.slice(0, start) + replacement + nameInput.value.slice(pos);
+        nameInput.value = nextVal;
+        const nextPos = start + replacement.length;
+        nameInput.setSelectionRange(nextPos, nextPos);
+        state.studentName = nextVal;
+        updateNameDisplays();
+        updateKanjiCandidates();
+        return;
+      }
+
+      if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        const pos = refInput.selectionStart ?? refInput.value.length;
+        const start = Math.max(0, pos - yomiLen);
+        const nextVal = refInput.value.slice(0, start) + replacement + refInput.value.slice(pos);
+        refInput.value = nextVal;
+        const nextPos = start + replacement.length;
+        refInput.setSelectionRange(nextPos, nextPos);
+        state.reflectionText = nextVal;
+        updateKanjiCandidates();
+        return;
+      }
+
+      const start = Math.max(0, state.cursorIndex - yomiLen);
+      state.essayText = state.essayText.slice(0, start) + replacement + state.essayText.slice(state.cursorIndex);
+      state.cursorIndex = start + replacement.length;
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    }
+
+    // =========================================================================
+    // 12. ④ 反論の自動生成（オフライン解析・学年別配当漢字準拠）
+    // =========================================================================
+    function analyzeAndGoToStep4() {
+      if (!state.stance) {
+        setStance('A');
+      }
+      generateCounterArguments();
+      switchStep(4);
+    }
+
+    function generateCounterArguments() {
+      const g = state.grade;
+      const themeObj = THEMES_BY_GRADE[g][state.themeIndex];
+      const text = state.essayText.trim();
+      const stance = state.stance || 'A';
+
+      const myClaim = stance === 'A' ? themeObj.stanceA : themeObj.stanceB;
+      const otherClaim = stance === 'A' ? themeObj.stanceB : themeObj.stanceA;
+      const oppositePool = stance === 'A' ? themeObj.opinionsB : themeObj.opinionsA;
+
+      const previewEl = document.getElementById('s4-essay-preview');
+      const stanceTag = document.getElementById('s4-stance-tag');
+      if (stance === 'A') {
+        stanceTag.textContent = `A：${myClaim}`;
+        stanceTag.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 truncate max-w-[62%]";
+      } else {
+        stanceTag.textContent = `B：${myClaim}`;
+        stanceTag.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 truncate max-w-[62%]";
+      }
+
+      if (text.length > 0) {
+        previewEl.textContent = text;
+      } else {
+        previewEl.textContent = g <= 2
+          ? "（まだ さくぶんが かかれて いません。③で かいてみよう！）"
+          : "（まだ作文が書かれていません。③で書いてみよう！）";
+      }
+
+      const rebuttals = [];
+
+      const keywordGroups = [
+        {
+          words: ["たのしい", "楽しい", "もりあがる", "盛り上がる", "うれしい", "好き", "すき"],
+          q: {
+            1: "「たのしい」「すき」という 気もちは わかるけれど、たのしい だけでは こまる ことは ないかな？",
+            2: "「たのしい」「すき」という 気もちは わかるけれど、たのしい だけでは こまる ことは ないかな？",
+            3: "「楽しい」「好き」という気持ちは大切ですが、楽しさだけをだいじにすると困ることはありませんか？",
+            4: "「楽しい」「好き」という気持ちは大切ですが、楽しさだけを優先すると困る場面やトラブルは起きませんか？",
+            5: "「楽しい」「好き」という気持ちは大切ですが、楽しさだけを優先すると困る場面やトラブルは起きませんか？",
+            6: "「楽しい」「好き」という気持ちは大切ですが、楽しさだけを優先すると困る場面やトラブルは起きませんか？"
+          },
+          h: {
+            1: "「たしかに 気をつける ことも あるけれど、〜すれば だいじょうぶです」と こたえてみよう！",
+            2: "「たしかに 気をつける ことも あるけれど、〜すれば だいじょうぶです」と 答えてみよう！",
+            3: "「たしかに気をつけることもありますが、ルールを工夫すれば楽しくつづけられます」と返してみよう！",
+            4: "「たしかに気をつける点もありますが、ルールを工夫すれば楽しく安全に続けられます」と返してみよう！",
+            5: "「たしかに気をつける点もありますが、ルールを工夫すれば楽しく安全に続けられます」と返してみよう！",
+            6: "「たしかに配慮すべき点もありますが、ルールを工夫すれば楽しく安全に続けられます」と返してみよう！"
+          }
+        },
+        {
+          words: ["はやい", "速い", "早い", "じかん", "時間", "べんり", "便利", "かんたん", "簡単"],
+          q: {
+            1: "「はやい」「べんり」と かいているけれど、いそぎすぎて しっぱいしたり たいせつな ことを わすれたり しないかな？",
+            2: "「はやい」「べんり」と 書いているけれど、いそぎすぎて しっぱいしたり 大切な ことを わすれたり しないかな？",
+            3: "「べんり・時間がみじかくなる」とありますが、いそぎすぎて大切なけいけんがなくなったりしませんか？",
+            4: "「便利・時間が短縮できる」という点について、効率ばかりを求めるとていねいさや大切な経験が失われませんか？",
+            5: "「便利・時間が短縮できる」という点について、効率ばかりを求めると丁寧さや大切な経験が失われませんか？",
+            6: "「便利・時間が短縮できる」という点について、効率ばかりを求めると丁寧さや大切な経験が失われませんか？"
+          },
+          h: {
+            1: "「あまった じかんで もっと たいせつな ことが できます」と はなそう！",
+            2: "「あまった じかんで もっと 大切な ことが できます」と せつめいしよう！",
+            3: "「時間をうまくつかうことで、その分ほかの大切なことに時間をつかえます」とせつめいしよう！",
+            4: "「効率よく進めることで、その分ほかの大切な活動や確認に時間を使えます」と説明しよう！",
+            5: "「効率よく進めることで、その分ほかの大切な活動や確認に時間を使えます」と説明しよう！",
+            6: "「効率よく進めることで、その分ほかの大切な活動や確認に時間を充てられます」と説明しよう！"
+          }
+        },
+        {
+          words: ["あんぜん", "安全", "あぶない", "危険", "けが", "しんぱい", "心配", "トラブル"],
+          q: {
+            1: "「あんぜん・しんぱい」に ついて、みんなで ルールを きめて 気をつければ ふせげるのでは ないかな？",
+            2: "「あんぜん・しんぱい」に ついて、みんなで ルールを きめて 気をつければ ふせげるのでは ないかな？",
+            3: "安全面やトラブルへの心配は、みんなでルールを決めて気をつければふせげるのではないでしょうか？",
+            4: "安全面やトラブルへの心配は、ルールづくりや大人の見守りがあれば十分に防げるのではないでしょうか？",
+            5: "安全面やトラブルへの心配は、ルールづくりや大人の見守りがあれば十分に防げるのではないでしょうか？",
+            6: "安全面やトラブルへの懸念は、ルールづくりや大人の見守りがあれば十分に防げるのではないでしょうか？"
+          },
+          h: {
+            1: "「ルールを つくっても、みんなが いつも まもれるとは かぎらないからです」と こたえよう！",
+            2: "「ルールを つくっても、みんなが いつも 守れるとは かぎらないからです」と 答えよう！",
+            3: "「ルールをつくっても、全員がいつも守るのはむずかしく、けがやじこをふせぐことが一番大切だからです」と返そう！",
+            4: "「ルールをつくっても、全員が常に守るのは難しく、万が一の危険を減らすことが最優先だからです」と返そう！",
+            5: "「ルールをつくっても、全員が常に守るのは難しく、万が一の危険を減らすことが最優先だからです」と返そう！",
+            6: "「ルールを設けても全員が常に守るのは難しく、万が一の危険を減らすことが最優先だからです」と返そう！"
+          }
+        },
+        {
+          words: ["ともだち", "友だち", "みんな", "協力", "きょうりょく", "なかよく", "平等", "びょうどう", "公平"],
+          q: {
+            1: "「みんなと なかよく」と あるけれど、ひとりで ゆっくり やりたい 人や にがてな 人は どうすれば いいかな？",
+            2: "「みんなと なかよく」と あるけれど、ひとりで ゆっくり やりたい 人や にがてな 人は どうすれば いいかな？",
+            3: "「みんなで協力・びょうどうに」という考えはすてきですが、一人ひとりのペースのちがいにはどう気をつけますか？",
+            4: "「みんなで協力・平等に」という考えはとても素敵ですが、一人ひとりの個性やペースの違いにはどう配慮しますか？",
+            5: "「みんなで協力・平等に」という考えはとても素敵ですが、一人ひとりの個性やペースの違いにはどう配慮しますか？",
+            6: "「みんなで協力・平等に」という考えは素晴らしいですが、一人ひとりの個性やペースの違いにはどう配慮しますか？"
+          },
+          h: {
+            1: "「こまっている 人が いたら、みんなで たすけあえば いいと おもいます」と こたえよう！",
+            2: "「こまっている 人が いたら、みんなで 助けあえば いいと 思います」と 答えよう！",
+            3: "「苦手な人やペースがちがう人がいても、おたがいに助け合える工夫をすればよいと思います」と返そう！",
+            4: "「苦手な人やペースが違う人がいても、お互いに助け合える工夫をすればよいと思います」と返そう！",
+            5: "「苦手な人やペースが違う人がいても、お互いに助け合える工夫をすればよいと思います」と返そう！",
+            6: "「苦手な人やペースが違う人がいても、お互いに補い合える工夫をすればよいと思います」と返そう！"
+          }
+        }
+      ];
+
+      let matchedGroup = null;
+      for (const grp of keywordGroups) {
+        if (grp.words.some(w => text.includes(w))) {
+          matchedGroup = grp;
+          break;
+        }
+      }
+
+      if (matchedGroup) {
+        rebuttals.push({
+          tag: g <= 2 ? "🔍 かいた ことばへの しつもん" : (g === 3 ? "🔍 作文のことばへの質問" : "🔍 作文のキーワードに対する質問"),
+          question: matchedGroup.q[g],
+          hint: matchedGroup.h[g]
+        });
+      }
+
+      const ex1 = oppositePool[0];
+      const ex2 = oppositePool[1] || oppositePool[0];
+
+      if (g === 1) {
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の 友だちからの いけん ①`,
+          question: `でも、「${ex1}」という りゆうで、「${otherClaim}」と おもいます。これに ついては どう おもいますか？`,
+          hint: `「たしかに そういう いいところも ありますが、それよりも 〇〇の ほうが たいせつだと おもいます」と こたえよう！`
+        });
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の 友だちからの いけん ②`,
+          question: `また、「${ex2}」という いけんも ありますが、どう せつめい しますか？`,
+          hint: "じぶんの けいけん（たとえば〜）を ひとつ 思いだして はなすと つたわりやすいよ！"
+        });
+      } else if (g === 2) {
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の 友だちからの いけん ①`,
+          question: `でも、「${ex1}」という りゆうで、「${otherClaim}」と 思います。これに ついては どう 思いますか？`,
+          hint: "「たしかに そういう よいところも ありますが、それよりも 〇〇の ほうが 大切だと 思います」と 答えよう！"
+        });
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の 友だちからの いけん ②`,
+          question: `また、「${ex2}」という いけんも ありますが、どう せつめい しますか？`,
+          hint: "自分の けいけん（たとえば〜）を ひとつ 思いだして 話すと つたわりやすいよ！"
+        });
+      } else if (g === 3) {
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の立場からの質問 ①`,
+          question: `でも、「${ex1}」という理由で、「${otherClaim}」という意見もあります。この点についてはどう考えますか？`,
+          hint: "「たしかにその点もわかりますが、それ以上に〇〇のほうが大切だと考えます」と返そう！"
+        });
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の立場からの質問 ②`,
+          question: `また、「${ex2}」という意見もあります。「${myClaim}」と言える一番の理由は何ですか？`,
+          hint: "自分のけいけんや身近なれい（「たとえば〜」）をあげてせつめいすると伝わりやすくなります！"
+        });
+      } else {
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の立場からの反論 ①`,
+          question: `しかし、「${ex1}」という理由から、「${otherClaim}」という意見も強くあります。この点についてはどう考えますか？`,
+          hint: "「たしかにその点も一理ありますが、それ以上に〇〇というメリット（問題点）のほうが大きいと考えます」と返そう！"
+        });
+        rebuttals.push({
+          tag: `⚡「${otherClaim}」の立場からの反論 ②`,
+          question: `また、「${ex2}」という意見もあります。「${myClaim}」と言える一番の根拠は何ですか？`,
+          hint: "自分の具体的な体験や身近な例（「たとえば〜」）を挙げて説明すると説得力が高まります！"
+        });
+      }
+
+      if (text.length > 0 && !text.includes("たとえば") && !text.includes("例えば") && !text.includes("経験") && !text.includes("けいけん")) {
+        rebuttals.push({
+          tag: g <= 2 ? "💡 もっと よくなる アドバイス" : (g === 3 ? "💡 伝わりやすくするための質問" : "💡 説得力を高めるための質問"),
+          question: g <= 2
+            ? "「たとえば どんな ことが ありましたか？」と きかれたら、どんな れいを 出しますか？"
+            : (g === 3 ? "「たとえばどんなことがありましたか？」と質問されたとき、どんな出来事を話しますか？" : "「具体的な例を一つ挙げてください」と質問されたとき、どんな出来事や事実を話しますか？"),
+          hint: g <= 2
+            ? "学校や おうちでの 出来事を ひとつ 思いうかべて おこう！"
+            : (g === 3 ? "③の作文に「たとえば〜」と1文書き足しておくと、ほんばんでさらに話しやすくなります！" : "③の作文に「たとえば〜」と1文書き足しておくと、本番でさらに話しやすくなります！")
+        });
+      }
+
+      const hintHeading = g <= 2 ? "🛡️ こたえかたの ヒント：" : (g === 3 ? "🛡️ 答え方のヒント：" : "🛡️ 切り返しのヒント：");
+
+      const container = document.getElementById('s4-rebuttals-container');
+      container.innerHTML = rebuttals.map(r => `
+        <div class="bg-white rounded-2xl p-[2.5%] border-2 border-amber-200 shadow-2xs">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[clamp(10px,1vw,13px)]">
+              ${r.tag}
+            </span>
+          </div>
+          <p class="font-maru font-bold text-[clamp(13px,1.3vw,17px)] text-slate-900 mb-2 leading-snug">
+            「${r.question}」
+          </p>
+          <div class="bg-sky-50 rounded-xl p-2.5 border border-sky-100 text-[clamp(11px,1.1vw,14px)] text-sky-950 font-medium">
+            <strong>${hintHeading}</strong> ${r.hint}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // =========================================================================
+    // 13. ⑤ 話合い本番でのアドバイス & 1分・2分練習タイマー
+    // =========================================================================
+    function prepareStep5AndGo() {
+      buildSpeakingAdvice();
+      switchStep(5);
+    }
+
+    function buildSpeakingAdvice() {
+      const g = state.grade;
+      const themeObj = THEMES_BY_GRADE[g][state.themeIndex];
+      const text = state.essayText.trim();
+      const stance = state.stance || 'A';
+      const myClaim = stance === 'A' ? themeObj.stanceA : themeObj.stanceB;
+
+      const sentences = text
+        .replace(/\n+/g, "")
+        .split("。")
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      let step1Text = "";
+      if (g === 1) {
+        step1Text = `「わたし（ぼく）は、『${myClaim}』と おもいます。」`;
+      } else if (g === 2) {
+        step1Text = `「わたし（ぼく）は、『${myClaim}』と 思います。」`;
+      } else if (g === 3) {
+        step1Text = `「わたしは、『${myClaim}』と思います。」`;
+      } else if (g === 4) {
+        step1Text = `「私は、『${myClaim}』と思います。」`;
+      } else {
+        step1Text = `「私は、『${myClaim}』と考えます。」`;
+      }
+
+      if (sentences.length > 0 && (sentences[0].includes("思います") || sentences[0].includes("おもいます") || sentences[0].includes("考えます"))) {
+        step1Text = `「${sentences[0]}。」`;
+      }
+
+      let step2Text = "";
+      const fallbackReason = stance === 'A' ? themeObj.opinionsA[0] : themeObj.opinionsB[0];
+      if (sentences.length >= 2) {
+        step2Text = `「${sentences.slice(1).join("。")}。」`;
+      } else if (sentences.length === 1 && !sentences[0].includes("思います") && !sentences[0].includes("おもいます") && !sentences[0].includes("考えます")) {
+        step2Text = g <= 2 ? `「りゆうは、${sentences[0]}からです。」` : `「理由は、${sentences[0]}からです。」`;
+      } else {
+        step2Text = g <= 2 ? `「りゆうは、${fallbackReason}」` : `「理由は、${fallbackReason}」`;
+      }
+
+      let step3Text = "";
+      if (g === 1) {
+        step3Text = `「なるほど、たしかに そういう いいところも ありますね。でも、わたしは やっぱり『${myClaim}』と おもいます。なぜなら、〜だからです。」`;
+      } else if (g === 2) {
+        step3Text = `「なるほど、たしかに そういう よいところも ありますね。でも、わたしは やっぱり『${myClaim}』と 思います。なぜなら、〜だからです。」`;
+      } else if (g === 3) {
+        step3Text = `「なるほど、たしかにそういう意見もありますね。ただ、わたしはそれ以上に〇〇が大切だと考えるので、『${myClaim}』と思います。」`;
+      } else {
+        step3Text = `「なるほど、たしかにそういう意見もありますね。ただ、私はそれ以上に〇〇が大切だと考えるので、『${myClaim}』という立場です。」`;
+      }
+
+      document.getElementById('s5-step1-script').textContent = step1Text;
+      document.getElementById('s5-step2-script').textContent = step2Text;
+      document.getElementById('s5-step3-script').textContent = step3Text;
+    }
+
+    function setSpeechTimerPreset(sec) {
+      stopSpeechTimer();
+      state.speechTimerDuration = sec;
+      state.speechTimerSec = sec;
+      updateSpeechTimerDisplay();
+
+      const ui = GRADE_UI[state.grade];
+      [60, 120].forEach(s => {
+        const btn = document.getElementById(`timer-preset-${s}`);
+        if (s === sec) {
+          btn.style.backgroundColor = ui.accent;
+          btn.style.color = "#FFFFFF";
+          btn.style.borderColor = ui.accent;
+        } else {
+          btn.style.backgroundColor = "#FFFFFF";
+          btn.style.color = "#334155";
+          btn.style.borderColor = "#CBD5E1";
+        }
+      });
+    }
+
+    function toggleSpeechTimer() {
+      const btn = document.getElementById('speech-timer-btn');
+      if (state.speechTimerRunning) {
+        stopSpeechTimer();
+      } else {
+        if (state.speechTimerSec <= 0) state.speechTimerSec = state.speechTimerDuration;
+        state.speechTimerRunning = true;
+        btn.textContent = "ストップ";
+        btn.className = "px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[clamp(10px,1vw,13px)] cursor-pointer";
+
+        state.speechTimerInterval = setInterval(() => {
+          state.speechTimerSec--;
+          updateSpeechTimerDisplay();
+          if (state.speechTimerSec <= 0) {
+            stopSpeechTimer();
+            playGentleBell();
+          }
+        }, 1000);
+      }
+    }
+
+    function stopSpeechTimer() {
+      state.speechTimerRunning = false;
+      if (state.speechTimerInterval) {
+        clearInterval(state.speechTimerInterval);
+        state.speechTimerInterval = null;
+      }
+      const btn = document.getElementById('speech-timer-btn');
+      if (btn) {
+        btn.textContent = "スタート";
+        btn.className = "px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[clamp(10px,1vw,13px)] cursor-pointer";
+      }
+    }
+
+    function resetSpeechTimer() {
+      stopSpeechTimer();
+      state.speechTimerSec = state.speechTimerDuration;
+      updateSpeechTimerDisplay();
+    }
+
+    function updateSpeechTimerDisplay() {
+      const m = Math.floor(state.speechTimerSec / 60);
+      const s = state.speechTimerSec % 60;
+      document.getElementById('speech-timer-display').textContent =
+        `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function playGentleBell() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.8);
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 14. ⑥ 話合いの振り返り & まとめシート表示・PNG自動保存・A4印刷
+    // =========================================================================
+    function renderReflectionCriteria() {
+      const ui = GRADE_UI[state.grade];
+      const container = document.getElementById('reflection-criteria-list');
+      const isCompact = (state.step === 6 && state.kanaPanelOpen && state.kanaPanelSide === 'right');
+
+      container.innerHTML = ui.criteria.map((label, idx) => {
+        const current = state.reflectionRatings[idx];
+        const rowPad = isCompact ? "px-2 py-1.5 gap-1" : "px-3 py-2 gap-2";
+        const textSize = isCompact ? "text-[clamp(10px,0.92vw,12px)]" : "text-[clamp(11px,1.1vw,14px)]";
+        const btnSize = isCompact ? "w-6 h-6 text-xs" : "w-8 h-8 text-sm";
+
+        return `
+          <div class="bg-white rounded-xl ${rowPad} border border-slate-200 flex items-center justify-between">
+            <span class="${textSize} font-bold text-slate-700 leading-tight">${label}</span>
+            <div class="flex-shrink-0 flex items-center gap-0.5">
+              ${['◎', '○', '△'].map(mark => {
+                const active = current === mark;
+                const style = active
+                  ? `background-color: ${ui.accent}; color: white; border-color: ${ui.accent};`
+                  : `background-color: #F8FAFC; color: #475569; border-color: #CBD5E1;`;
+                return `
+                  <button onclick="setReflectionRating(${idx}, '${mark}')" class="${btnSize} rounded-lg font-maru font-black border transition-all cursor-pointer" style="${style}">
+                    ${mark}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setReflectionRating(idx, mark) {
+      state.reflectionRatings[idx] = mark;
+      renderReflectionCriteria();
+    }
+
+    function setThoughtChange(val) {
+      state.thoughtChange = val;
+      updateThoughtChangeButtons();
+    }
+
+    function updateThoughtChangeButtons() {
+      const b1 = document.getElementById('tc-btn-1');
+      const b2 = document.getElementById('tc-btn-2');
+      const accent = GRADE_UI[state.grade].accent;
+
+      [b1, b2].forEach(b => {
+        b.style.backgroundColor = "#F8FAFC";
+        b.style.color = "#334155";
+        b.style.borderColor = "#CBD5E1";
+      });
+
+      if (state.thoughtChange === 'deep') {
+        b1.style.backgroundColor = accent;
+        b1.style.color = "#FFFFFF";
+        b1.style.borderColor = accent;
+      } else if (state.thoughtChange === 'changed') {
+        b2.style.backgroundColor = accent;
+        b2.style.color = "#FFFFFF";
+        b2.style.borderColor = accent;
+      }
+    }
+
+    /**
+     * 「まとめシートをほぞん」ボタン：まとめシート画面を表示し、同時にPNG画像として自動ダウンロード保存
+     */
+    function saveAndOpenSummarySheet() {
+      state.reflectionText = document.getElementById('reflection-textarea').value;
+      renderSummarySheetModal();
+      document.getElementById('summary-modal').classList.remove('hidden');
+      downloadSummaryPng();
+    }
+
+    function renderSummarySheetModal() {
+      const g = state.grade;
+      const ui = GRADE_UI[g];
+      const themeObj = THEMES_BY_GRADE[g][state.themeIndex];
+      const nameStr = state.studentName.trim() || ui.s6NameEmpty;
+      const stanceText = state.stance === 'A'
+        ? `A：${themeObj.stanceA}`
+        : (state.stance === 'B' ? `B：${themeObj.stanceB}` : ui.stanceUnset);
+
+      const changeText = state.thoughtChange === 'deep'
+        ? ui.s6Change1
+        : (state.thoughtChange === 'changed' ? ui.s6Change2 : "－");
+
+      // 原稿用紙のマス目（使用行数に応じて最小10行〜必要行数）
+      const cols = 20;
+      const { cells, usedCount } = formatTextToCells(state.essayText, state.paperSize, cols);
+      const displayRows = Math.max(10, Math.min(state.paperSize / cols, Math.ceil(Math.max(1, usedCount) / cols)));
+      const displayCells = cells.slice(0, displayRows * cols);
+
+      const genkouHtml = `
+        <div class="genkou-grid w-full">
+          ${displayCells.map((c, idx) => {
+            const rowNum = Math.floor(idx / cols) + 1;
+            const isBlockEnd = rowNum % 5 === 0 && rowNum < displayRows;
+            return `<div class="genkou-cell print-genkou-cell text-[12px] sm:text-[13px] ${isBlockEnd ? 'row-sep' : ''}">${escapeHtml(c.ch)}</div>`;
+          }).join('')}
+        </div>
+      `;
+
+      const lblTheme = g <= 2 ? "トークテーマ" : "今回のトークテーマ";
+      const lblName = g <= 3 ? "なまえ" : "名前";
+      const lblStance = g <= 3 ? "えらんだ かんがえ" : "選んだ立場";
+      const lblEssay = g <= 3 ? "じぶんの さくぶん" : "自分の意見作文";
+      const lblCheck = g <= 3 ? "めあての チェック" : "めあての自己評価";
+      const lblRef = g <= 3 ? "ふりかえり" : "振り返り";
+
+      const modalBody = document.getElementById('summary-modal-body');
+      modalBody.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <div class="sm:col-span-2">
+            <div class="text-xs font-bold text-slate-500">${ui.name} ／ ${lblTheme}</div>
+            <div class="font-maru font-black text-base sm:text-lg text-slate-900 mt-0.5">${themeObj.title}</div>
+          </div>
+          <div class="flex flex-col justify-center bg-white px-3 py-1.5 rounded-xl border border-slate-200">
+            <div class="text-[11px] font-bold text-slate-400">${lblName}</div>
+            <div class="font-maru font-black text-base text-slate-900">${escapeHtml(nameStr)}</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold text-slate-500 mr-2">${lblStance}：</span>
+            <span class="font-maru font-black text-sm sm:text-base text-slate-900">${stanceText}</span>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-slate-500 mr-1">${ui.s6ChangeLabel}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900">${changeText}</span>
+          </div>
+        </div>
+
+        <div class="bg-amber-50/40 p-3 rounded-2xl border border-red-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-bold text-red-800">📝 ${lblEssay}（${state.essayText.replace(/\n/g, "").length}字）</span>
+          </div>
+          ${genkouHtml}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <div class="text-xs font-bold text-slate-500 mb-1.5">🌟 ${lblCheck}</div>
+            <ul class="space-y-1 text-xs sm:text-sm">
+              ${ui.criteria.map((c, i) => `
+                <li class="flex items-center justify-between gap-2 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                  <span class="font-medium text-slate-700">${c}</span>
+                  <span class="font-maru font-black text-base flex-shrink-0" style="color: ${ui.accent};">${state.reflectionRatings[i] || "－"}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col">
+            <div class="text-xs font-bold text-slate-500 mb-1.5">✏️ ${lblRef}</div>
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm whitespace-pre-wrap flex-grow min-h-[72px] text-slate-800">${escapeHtml(state.reflectionText || "（未入力）")}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * Canvas API を使ってまとめシート全体（テーマ・名前・立場・原稿用紙のマス目・めあて評価・振り返り）を
+     * 高解像度PNG画像として直接生成・ダウンロード保存する
+     */
+    function downloadSummaryPng() {
+      const g = state.grade;
+      const ui = GRADE_UI[g];
+      const themeObj = THEMES_BY_GRADE[g][state.themeIndex];
+      const nameStr = state.studentName.trim() || ui.s6NameEmpty;
+      const stanceText = state.stance === 'A'
+        ? `A：${themeObj.stanceA}`
+        : (state.stance === 'B' ? `B：${themeObj.stanceB}` : ui.stanceUnset);
+      const changeText = state.thoughtChange === 'deep'
+        ? ui.s6Change1
+        : (state.thoughtChange === 'changed' ? ui.s6Change2 : "－");
+
+      const cols = 20;
+      const { cells, usedCount } = formatTextToCells(state.essayText, state.paperSize, cols);
+      const displayRows = Math.max(10, Math.min(state.paperSize / cols, Math.ceil(Math.max(1, usedCount) / cols)));
+
+      const W = 1240;
+      const pad = 44;
+      const cellSize = Math.floor((W - pad * 2 - 40) / 20);
+      const gridW = cellSize * 20;
+      const gridH = cellSize * displayRows;
+      const H = 430 + gridH + 290;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // 背景
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, W, H);
+
+      // 外枠
+      ctx.strokeStyle = ui.accent;
+      ctx.lineWidth = 8;
+      ctx.strokeRect(12, 12, W - 24, H - 24);
+
+      // ヘッダー帯
+      ctx.fillStyle = ui.accent;
+      ctx.fillRect(12, 12, W - 24, 72);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "900 30px 'Zen Maru Gothic', 'Noto Sans JP', sans-serif";
+      ctx.fillText(`🎓 ${ui.modalTitle}（${ui.name}）`, pad, 58);
+
+      // テーマ・名前ボックス
+      let y = 104;
+      ctx.fillStyle = "#F8FAFC";
+      ctx.fillRect(pad, y, W - pad * 2, 110);
+      ctx.strokeStyle = "#CBD5E1";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pad, y, W - pad * 2, 110);
+
+      ctx.fillStyle = "#64748B";
+      ctx.font = "700 18px 'Noto Sans JP', sans-serif";
+      ctx.fillText(g <= 2 ? "トークテーマ：" : "今回のトークテーマ：", pad + 18, y + 32);
+      ctx.fillText(`${g <= 3 ? "なまえ" : "名前"}：${nameStr}`, W - pad - 340, y + 32);
+
+      ctx.fillStyle = "#0F172A";
+      ctx.font = "900 24px 'Zen Maru Gothic', 'Noto Sans JP', sans-serif";
+      ctx.fillText(themeObj.title.slice(0, 38), pad + 18, y + 76);
+
+      // 立場ボックス
+      y += 124;
+      ctx.fillStyle = "#FEF3C7";
+      ctx.fillRect(pad, y, W - pad * 2, 54);
+      ctx.fillStyle = "#1E293B";
+      ctx.font = "700 20px 'Noto Sans JP', sans-serif";
+      ctx.fillText(`${g <= 3 ? "えらんだ かんがえ" : "選んだ立場"}：${stanceText}`, pad + 18, y + 35);
+
+      // 原稿用紙エリア
+      y += 72;
+      ctx.fillStyle = "#991B1B";
+      ctx.font = "700 20px 'Noto Sans JP', sans-serif";
+      ctx.fillText(`📝 ${g <= 3 ? "じぶんの さくぶん" : "自分の意見作文"}（${state.essayText.replace(/\n/g, "").length}字）`, pad, y);
+
+      y += 14;
+      const gridLeft = pad + 20;
+      ctx.fillStyle = "#FFFDF9";
+      ctx.fillRect(gridLeft, y, gridW, gridH);
+
+      for (let r = 0; r < displayRows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const x0 = gridLeft + c * cellSize;
+          const y0 = y + r * cellSize;
+          ctx.strokeStyle = "#F87171";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x0, y0, cellSize, cellSize);
+
+          const ch = cells[idx] ? cells[idx].ch : "";
+          if (ch) {
+            ctx.fillStyle = "#0F172A";
+            ctx.font = `700 ${Math.floor(cellSize * 0.54)}px 'Zen Maru Gothic', 'Noto Sans JP', sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(ch, x0 + cellSize / 2, y0 + cellSize / 2 + 1);
+          }
+        }
+      }
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.strokeStyle = "#DC2626";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(gridLeft, y, gridW, gridH);
+
+      // 振り返り・めあて
+      y += gridH + 34;
+      ctx.fillStyle = "#0F172A";
+      ctx.font = "900 20px 'Noto Sans JP', sans-serif";
+      ctx.fillText(`🌟 ${g <= 3 ? "めあての チェック" : "めあての自己評価"}`, pad, y);
+      ctx.fillText(`✏️ ${g <= 3 ? "ふりかえり" : "振り返り"}（${changeText}）`, W / 2 + 10, y);
+
+      y += 14;
+      ctx.font = "600 16px 'Noto Sans JP', sans-serif";
+      ui.criteria.forEach((crit, i) => {
+        const mark = state.reflectionRatings[i] || "－";
+        const rowY = y + i * 38;
+        ctx.fillStyle = "#F8FAFC";
+        ctx.fillRect(pad, rowY, W / 2 - pad - 20, 32);
+        ctx.fillStyle = "#1E293B";
+        ctx.fillText(crit.slice(0, 26), pad + 10, rowY + 22);
+        ctx.fillStyle = ui.accent;
+        ctx.font = "900 20px 'Zen Maru Gothic', sans-serif";
+        ctx.fillText(mark, W / 2 - pad - 48, rowY + 23);
+        ctx.font = "600 16px 'Noto Sans JP', sans-serif";
+      });
+
+      // 右側：自由記述
+      const refBoxX = W / 2 + 10;
+      const refBoxW = W / 2 - pad - 10;
+      ctx.fillStyle = "#F8FAFC";
+      ctx.fillRect(refBoxX, y, refBoxW, 146);
+      ctx.strokeStyle = "#CBD5E1";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(refBoxX, y, refBoxW, 146);
+
+      ctx.fillStyle = "#1E293B";
+      const refLines = wrapCanvasText(state.reflectionText || "（未入力）", 26);
+      refLines.slice(0, 5).forEach((line, i) => {
+        ctx.fillText(line, refBoxX + 14, y + 28 + i * 25);
+      });
+
+      const safeName = (state.studentName.trim() || "じどう").replace(/[\\/:*?"<>|]/g, "_");
+      const link = document.createElement('a');
+      link.download = `トークのじかん_${ui.name}_${safeName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function wrapCanvasText(text, maxChars) {
+      const lines = [];
+      text.split('\n').forEach(paragraph => {
+        if (paragraph.length === 0) {
+          lines.push("");
+          return;
+        }
+        for (let i = 0; i < paragraph.length; i += maxChars) {
+          lines.push(paragraph.slice(i, i + maxChars));
+        }
+      });
+      return lines;
+    }
+
+    function closeSummaryModal() {
+      document.getElementById('summary-modal').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // 初期描画
+    window.addEventListener('DOMContentLoaded', () => {
+      initKanaKeypad();
+      renderGenkouyoushi();
+      updateKanjiCandidates();
+    });
+  </script>
+</body>
+</html>
