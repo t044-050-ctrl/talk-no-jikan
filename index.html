@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>トークの時間</title>
-  <meta property="og:title" content="トークの時間">
-    <meta property="og:description" content="【国語】話合いの学習を支援してくれるアプリです。">
-    <meta property="og:type" content="website">
+  <title>トークの じかん - しょうがっこう こくご はなしあい</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Zen Maru Gothic & Noto Sans JP -->
@@ -604,17 +601,17 @@
                 </div>
               </div>
 
-              <!-- 原稿用紙グリッド（キーボード入力用の隠しinputも連動） -->
+              <!-- 原稿用紙グリッド（キーボード入力用の透明テキストエリアを上に重ねてIME変換・改行に完全対応） -->
               <div id="genkou-scroll-area" class="flex-grow overflow-y-auto custom-scroll pr-1 relative" onclick="focusGenkouEnd()">
                 <div id="genkou-container" class="genkou-grid w-full">
                   <!-- JSで20字×10〜20行のマス目を生成 -->
                 </div>
+                <textarea id="hidden-ime-input" aria-label="さくぶんにゅうりょく"
+                  autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                  style="position:absolute; left:0; top:0; width:100%; height:100%; opacity:0.01; color:transparent; background:transparent; border:none; outline:none; resize:none; caret-color:transparent; z-index:5; pointer-events:none;"
+                  oninput="handleHiddenImeInput(event)"
+                  onkeydown="handleHiddenImeKeydown(event)"></textarea>
               </div>
-              <!-- PC物理キーボード・IME入力用テキストボックス（視覚外に配置） -->
-              <textarea id="hidden-ime-input" aria-hidden="true"
-                style="position:fixed; left:-9999px; top:0; width:1px; height:1px; opacity:0;"
-                oninput="handleHiddenImeInput(event)"
-                onkeydown="handleHiddenImeKeydown(event)"></textarea>
             </div>
 
             <!-- スマホ風12キー「かなパネル」（初期設定：右端 order-2、初期表示：閉じた状態/開閉ボタン対応） -->
@@ -643,8 +640,8 @@
               </div>
 
               <!-- 12キー かなグリッド（トグル＆フリック両対応） -->
-              <div id="kana-keypad-grid" class="grid grid-cols-3 gap-1 flex-grow relative">
-                <!-- JSで12キー生成 -->
+              <div id="kana-keypad-grid" class="grid grid-cols-5 grid-rows-4 gap-1 flex-grow relative">
+                <!-- JSで5列×4行キー生成 -->
               </div>
 
               <!-- フリック方向ガイドポップアップ -->
@@ -2065,18 +2062,18 @@
     // 4. 12キーかなパネルデータ（トグル＆フリック両対応）
     // =========================================================================
     const KANA_KEYS = [
-      { id: 'a',  chars: ['あ', 'い', 'う', 'え', 'お'], label: 'あ', sub: 'いうえお' },
-      { id: 'ka', chars: ['か', 'き', 'く', 'け', 'こ'], label: 'か', sub: 'きくけこ' },
-      { id: 'sa', chars: ['さ', 'し', 'す', 'せ', 'そ'], label: 'さ', sub: 'しすせそ' },
-      { id: 'ta', chars: ['た', 'ち', 'つ', 'て', 'と'], label: 'た', sub: 'ちつてと' },
-      { id: 'na', chars: ['な', 'に', 'ぬ', 'ね', 'の'], label: 'な', sub: 'にぬねの' },
-      { id: 'ha', chars: ['は', 'ひ', 'ふ', 'へ', 'ほ'], label: 'は', sub: 'ひふへほ' },
-      { id: 'ma', chars: ['ま', 'み', 'む', 'め', 'も'], label: 'ま', sub: 'みむめも' },
-      { id: 'ya', chars: ['や', '（', 'ゆ', '）', 'よ'], label: 'や', sub: 'ゆ・よ' },
-      { id: 'ra', chars: ['ら', 'り', 'る', 'れ', 'ろ'], label: 'ら', sub: 'りるれろ' },
-      { id: 'mod', type: 'mod', label: '゛゜小', sub: 'へんかん' },
-      { id: 'wa', chars: ['わ', 'を', 'ん', 'ー', '　'], label: 'わ', sub: 'をんー' },
-      { id: 'punc', chars: ['、', '。', '？', '！', '「'], label: '、。', sub: '？！「' }
+      { id: 'a',  chars: ['あ', 'い', 'う', 'え', 'お'], label: 'あ', sub: '' },
+      { id: 'ka', chars: ['か', 'き', 'く', 'け', 'こ'], label: 'か', sub: '' },
+      { id: 'sa', chars: ['さ', 'し', 'す', 'せ', 'そ'], label: 'さ', sub: '' },
+      { id: 'ta', chars: ['た', 'ち', 'つ', 'て', 'と'], label: 'た', sub: '' },
+      { id: 'na', chars: ['な', 'に', 'ぬ', 'ね', 'の'], label: 'な', sub: '' },
+      { id: 'ha', chars: ['は', 'ひ', 'ふ', 'へ', 'ほ'], label: 'は', sub: '' },
+      { id: 'ma', chars: ['ま', 'み', 'む', 'め', 'も'], label: 'ま', sub: '' },
+      { id: 'ya', chars: ['や', '（', 'ゆ', '）', 'よ'], label: 'や', sub: '' },
+      { id: 'ra', chars: ['ら', 'り', 'る', 'れ', 'ろ'], label: 'ら', sub: '' },
+      { id: 'mod', type: 'mod', label: '゛゜小', sub: '' },
+      { id: 'wa', chars: ['わ', 'を', 'ん', 'ー', '　'], label: 'わ', sub: '' },
+      { id: 'punc', chars: ['、', '。', '？', '！', '「'], label: '、。?!', sub: '' }
     ];
 
     // 濁点・半濁点・小文字サイクルマップ
@@ -2685,6 +2682,27 @@
 
         return `<div onclick="onCellClick(event, ${idx})" class="genkou-cell ${fontSizeClass} ${isLastCol ? 'bg-red-50/30' : ''} ${isBlockEnd ? 'row-sep' : ''}">${escapeHtml(cell.ch)}${caretHtml}</div>`;
       }).join('');
+
+      // カーソル位置のマスが見えるように自動スクロール
+      const scrollArea = document.getElementById('genkou-scroll-area');
+      const activeCell = container.children[caretCellIdx];
+      if (scrollArea && activeCell) {
+        const cellTop = activeCell.offsetTop;
+        const cellBottom = cellTop + activeCell.offsetHeight;
+        if (cellTop < scrollArea.scrollTop) {
+          scrollArea.scrollTop = cellTop;
+        } else if (cellBottom > scrollArea.scrollTop + scrollArea.clientHeight) {
+          scrollArea.scrollTop = cellBottom - scrollArea.clientHeight;
+        }
+        // IME変換窓がカーソル位置のすぐ近くに出るように位置を同期
+        const hidden = document.getElementById('hidden-ime-input');
+        if (hidden) {
+          hidden.style.top = `${cellTop}px`;
+          hidden.style.left = `${activeCell.offsetLeft}px`;
+          hidden.style.width = `${Math.max(120, scrollArea.clientWidth - activeCell.offsetLeft)}px`;
+          hidden.style.height = `${activeCell.offsetHeight}px`;
+        }
+      }
     }
 
     function onCellClick(e, cellIdx) {
@@ -2726,33 +2744,71 @@
       }
     }
 
-    // 物理キーボード・PC IME入力対応
+    // 物理キーボード・PC IME入力対応（入力中・変換中の文字も即座に作文用紙へ反映）
     let isComposing = false;
+    let composingStartIndex = null;
+    let composingLength = 0;
+    let justEndedComposition = false;
+
     document.addEventListener('compositionstart', (e) => {
-      if (e.target && e.target.id === 'hidden-ime-input') isComposing = true;
+      if (e.target && e.target.id === 'hidden-ime-input') {
+        isComposing = true;
+        justEndedComposition = false;
+        composingStartIndex = state.cursorIndex;
+        composingLength = 0;
+      }
     });
+
+    document.addEventListener('compositionupdate', (e) => {
+      if (e.target && e.target.id === 'hidden-ime-input' && isComposing) {
+        const val = e.data !== undefined && e.data !== null ? e.data : (e.target.value || "");
+        const before = state.essayText.slice(0, composingStartIndex);
+        const after = state.essayText.slice(composingStartIndex + composingLength);
+        state.essayText = before + val + after;
+        composingLength = val.length;
+        state.cursorIndex = composingStartIndex + composingLength;
+        renderGenkouyoushi();
+      }
+    });
+
     document.addEventListener('compositionend', (e) => {
       if (e.target && e.target.id === 'hidden-ime-input') {
-        isComposing = false;
-        const val = e.target.value;
-        if (val) {
+        const val = e.data !== undefined && e.data !== null ? e.data : (e.target.value || "");
+        if (composingStartIndex !== null) {
+          const before = state.essayText.slice(0, composingStartIndex);
+          const after = state.essayText.slice(composingStartIndex + composingLength);
+          state.essayText = before + val + after;
+          state.cursorIndex = composingStartIndex + val.length;
+        } else if (val) {
           insertTextAtCursor(val);
-          e.target.value = "";
         }
+        isComposing = false;
+        composingStartIndex = null;
+        composingLength = 0;
+        justEndedComposition = true;
+        setTimeout(() => { justEndedComposition = false; }, 50);
+        e.target.value = "";
+        renderGenkouyoushi();
+        updateKanjiCandidates();
       }
     });
 
     function handleHiddenImeInput(e) {
-      if (isComposing) return;
+      if (isComposing || e.isComposing) return;
       const val = e.target.value;
       if (val) {
-        insertTextAtCursor(val);
+        // 改行コードが含まれている場合もそのまま反映
+        const normalized = val.replace(/\r\n?/g, "\n");
+        insertTextAtCursor(normalized);
         e.target.value = "";
       }
     }
 
     function handleHiddenImeKeydown(e) {
-      if (isComposing || state.inputTarget !== 'essay') return;
+      // 変換中または変換確定直後のEnterは無視する
+      if (isComposing || e.isComposing || e.keyCode === 229 || justEndedComposition) return;
+      if (state.inputTarget !== 'essay') return;
+
       if (e.key === 'Backspace') {
         e.preventDefault();
         deleteBackwardAtCursor();
@@ -2773,8 +2829,29 @@
         state.cursorIndex = Math.min(state.essayText.length, state.cursorIndex + 1);
         renderGenkouyoushi();
         updateKanjiCandidates();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        insertNewlineAtCursor();
       }
     }
+
+    // 作文用紙タブ表示中にキーボードを打ち始めたら自動で入力欄にフォーカスを合わせる
+    document.addEventListener('keydown', (e) => {
+      if (state.step !== 3 || state.inputTarget !== 'essay') return;
+      const active = document.activeElement;
+      if (active && (active.id === 'hidden-ime-input' || active.id === 'student-name-input')) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Process') {
+        focusHiddenImeInput();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          insertNewlineAtCursor();
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          deleteBackwardAtCursor();
+        }
+      }
+    });
 
     // =========================================================================
     // 11. スマホ風12キー「かなパネル」（トグル・フリック両対応＆学年別漢字変換）
@@ -2887,32 +2964,67 @@
       const grid = document.getElementById('kana-keypad-grid');
       if (!grid) return;
 
-      // 4行×3列 + 下段操作キー（1字けす・かいぎょう）
-      let html = KANA_KEYS.map((keyObj, idx) => {
+      const renderKanaBtn = (keyIdx) => {
+        const keyObj = KANA_KEYS[keyIdx];
         const isMod = keyObj.type === 'mod';
         const bgClass = isMod
-          ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950"
+          ? "bg-amber-50 hover:bg-amber-100 border-slate-300 text-slate-900"
           : "bg-white hover:bg-slate-50 border-slate-300 text-slate-900";
+        const labelSize = isMod ? "text-[clamp(11px,1.05vw,14px)]" : "text-[clamp(15px,1.5vw,20px)]";
         return `
-          <button type="button" data-key-idx="${idx}"
-            class="kana-key rounded-xl border-b-2 ${bgClass} flex flex-col items-center justify-center py-1 px-0.5 shadow-2xs cursor-pointer">
-            <span class="font-maru font-black text-[clamp(14px,1.45vw,19px)] leading-none">${keyObj.label}</span>
-            <span class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">${keyObj.sub}</span>
+          <button type="button" data-key-idx="${keyIdx}"
+            class="kana-key rounded-xl border-b-2 ${bgClass} flex items-center justify-center py-1 px-0.5 shadow-2xs cursor-pointer">
+            <span class="font-maru font-black ${labelSize} leading-none">${keyObj.label}</span>
           </button>
         `;
-      }).join('');
+      };
 
-      // 最下段の操作ボタン（1じけす・かいぎょう・かくてい）
-      html += `
-        <button type="button" onclick="deleteBackwardAtCursor()" class="kana-key rounded-xl border-b-2 bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-900 font-maru font-black text-[clamp(11px,1.05vw,14px)] py-1.5 cursor-pointer">
-          ⌫ 1じけす
+      // 添付画像の5列×4行配置
+      // 1行目: [→] [あ] [か] [さ] [⌫]
+      // 2行目: [↺] [た] [な] [は] [空白]
+      // 3行目: [ABC] [ま] [や] [ら] [↵(2行縦長)]
+      // 4行目: [☺] [゛゜小] [わ] [、。?!]
+      const html = `
+        <!-- 1行目 -->
+        <button type="button" onclick="confirmToggleCommit()" title="つぎへ" class="kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-slate-300 border-slate-300 text-slate-600 font-maru font-black text-[clamp(13px,1.3vw,17px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          →
         </button>
-        <button type="button" onclick="confirmToggleCommit()" class="kana-key rounded-xl border-b-2 bg-slate-200 hover:bg-slate-300 border-slate-400 text-slate-800 font-maru font-bold text-[clamp(11px,1.05vw,14px)] py-1.5 cursor-pointer">
-          → つぎへ
+        ${renderKanaBtn(0)}
+        ${renderKanaBtn(1)}
+        ${renderKanaBtn(2)}
+        <button type="button" onclick="deleteBackwardAtCursor()" title="1じけす" class="kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-rose-100 border-slate-300 text-slate-800 font-maru font-black text-[clamp(13px,1.3vw,17px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          ⌫
         </button>
-        <button type="button" onclick="insertNewlineAtCursor()" class="kana-key rounded-xl border-b-2 bg-sky-100 hover:bg-sky-200 border-sky-300 text-sky-900 font-maru font-black text-[clamp(11px,1.05vw,14px)] py-1.5 cursor-pointer">
-          ↵ かいぎょう
+
+        <!-- 2行目 -->
+        <button type="button" onclick="reverseToggleChar()" title="ぎゃくもどり" class="kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-slate-300 border-slate-300 text-slate-600 font-maru font-black text-[clamp(13px,1.3vw,17px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          ↺
         </button>
+        ${renderKanaBtn(3)}
+        ${renderKanaBtn(4)}
+        ${renderKanaBtn(5)}
+        <button type="button" onclick="insertSpaceAtCursor()" class="kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-slate-300 border-slate-300 text-slate-800 font-maru font-bold text-[clamp(11px,1.05vw,14px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          空白
+        </button>
+
+        <!-- 3行目 -->
+        <button type="button" onclick="insertTextAtCursor('・')" class="kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-slate-300 border-slate-300 text-slate-800 font-maru font-black text-[clamp(11px,1.05vw,14px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          ABC
+        </button>
+        ${renderKanaBtn(6)}
+        ${renderKanaBtn(7)}
+        ${renderKanaBtn(8)}
+        <button type="button" onclick="insertNewlineAtCursor()" title="かいぎょう" class="row-span-2 kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-sky-100 border-slate-300 text-slate-800 font-maru font-black text-[clamp(15px,1.5vw,20px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          ↵
+        </button>
+
+        <!-- 4行目 -->
+        <button type="button" onclick="insertTextAtCursor('♪')" class="kana-key rounded-xl border-b-2 bg-slate-200/80 hover:bg-slate-300 border-slate-300 text-slate-800 font-maru font-black text-[clamp(14px,1.4vw,18px)] flex items-center justify-center shadow-2xs cursor-pointer">
+          ☺
+        </button>
+        ${renderKanaBtn(9)}
+        ${renderKanaBtn(10)}
+        ${renderKanaBtn(11)}
       `;
 
       grid.innerHTML = html;
@@ -2923,6 +3035,20 @@
         const keyObj = KANA_KEYS[keyIdx];
         attachFlickAndToggleEvents(btn, keyObj);
       });
+    }
+
+    function insertSpaceAtCursor() {
+      state.lastToggleKey = null;
+      insertTextAtCursor("　");
+    }
+
+    function reverseToggleChar() {
+      if (!state.lastToggleKey) return;
+      const keyObj = KANA_KEYS.find(k => k.id === state.lastToggleKey);
+      if (!keyObj || !keyObj.chars) return;
+      state.lastToggleIndex = (state.lastToggleIndex - 1 + keyObj.chars.length) % keyObj.chars.length;
+      state.lastToggleTime = Date.now();
+      replacePrevChar(keyObj.chars[state.lastToggleIndex]);
     }
 
     function attachFlickAndToggleEvents(btn, keyObj) {
