@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>トークの時間</title>
-  <meta property="og:title" content="トークの時間">
-    <meta property="og:description" content="【国語】話合いの学習支援アプリです。">
-    <meta property="og:type" content="website">
+  <title>トークの じかん - しょうがっこう こくご はなしあい</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Zen Maru Gothic & Noto Sans JP -->
@@ -426,11 +423,6 @@
             トークテーマを えらぼう！（10こ）
           </h2>
         </div>
-
-        <button onclick="pickRandomTheme()" class="px-4 py-1.5 rounded-xl text-white font-bold text-[clamp(11px,1.15vw,15px)] shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5" style="background-color: var(--grade-accent);">
-          <span>🎲</span>
-          <span id="random-btn-label">ランダムで えらぶ</span>
-        </button>
       </header>
 
       <!-- 10個のトークテーマグリッド（2列×5行） -->
@@ -921,14 +913,6 @@
                   onfocus="setInputTarget('reflection')"
                   oninput="handleReflectionInput()"
                   class="w-full flex-grow rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none p-3 text-[clamp(12px,1.2vw,16px)] leading-relaxed resize-none bg-white"></textarea>
-                
-                <div class="mt-2 flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200 gap-1">
-                  <span class="text-[clamp(10px,1vw,13px)] font-bold text-slate-700 truncate" id="s6-change-label">かんがえは どうなった？</span>
-                  <div class="flex gap-1 flex-shrink-0">
-                    <button onclick="setThoughtChange('deep')" id="tc-btn-1" class="tc-btn px-2 py-1 rounded-lg text-[clamp(10px,0.9vw,12px)] font-bold border border-slate-300 bg-slate-50 cursor-pointer">かんがえが ふかまった</button>
-                    <button onclick="setThoughtChange('changed')" id="tc-btn-2" class="tc-btn px-2 py-1 rounded-lg text-[clamp(10px,0.9vw,12px)] font-bold border border-slate-300 bg-slate-50 cursor-pointer">かんがえが かわった</button>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -2434,173 +2418,364 @@
     // 3. 学年別 漢字変換辞書（文部科学省 小学校学習指導要領 学年別漢字配当表準拠）
     //    g: その漢字（熟語の場合は構成する全漢字のうち最も高い学年）の配当学年
     // =========================================================================
+    const GRADE_KANJI_CHARS = {
+      1: "一右雨円王音下火花貝学気九休玉金空月犬見五口校左三山子四糸字耳七車手十出女小上森人水正生青夕石赤千川先早草足村大男竹中虫町天田土二日入年白八百文木本名目立力林六",
+      2: "引羽雲園遠何科夏家歌画回会海絵外角楽活間丸岩顔汽記帰弓牛魚京強教近兄形計元言原戸古午後語工公広交光考行高黄合谷国黒今才細作算止市矢姉思紙寺自時室社弱首秋週春書少場色食心新親図数西声星晴切雪船線前組走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読内南肉馬売買麦半番父風分聞米歩母方北毎妹万明鳴毛門夜野友用曜来里理話",
+      3: "悪安暗医委意育員院飲運泳駅央横屋温化荷界開階寒感漢館岸起期客究急級宮球去橋業曲局銀区苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始指歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服福物平返勉放味命面問役薬由油有遊予羊洋葉陽様落流旅両緑礼列練路和",
+      4: "愛案以衣位囲胃印英栄塩億加果貨課芽改械害街各覚完官管関観願希季紀喜旗器機議求救給挙漁共協鏡競極訓軍郡径型景芸欠結建健験固功好候航康告差菜最材昨札刷殺察参産散残士氏史司姉歯詩次事持式実写者主守取酒受州拾終習集住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服福物平返勉放味命面問役薬由油有遊予羊洋葉陽様落流旅両緑礼列練路和",
+      5: "圧移因永営衛易益液演応往桜恩可仮価河過賀快解格確額刊幹慣眼基寄規技義逆久旧居許境均禁句群経潔件券険検限現減故個護効厚耕鉱構興講混査再災妻採際在財罪雑酸賛支志枝師資飼示似識質舎謝授修述術準序招承証条状常情織職制性政勢精製税責績接設舌絶銭善祖素総造像増則測属率損退貸態団断築張提程適敵統銅導徳独任燃能破犯判版比肥非備俵評貧布婦富武復複仏編弁保墓報豊防貿暴務迷綿輸余預容略留領",
+      6: "胃異遺域宇映延沿我灰拡革閣割株干巻看簡危机揮貴疑吸供胸郷勤筋系敬警劇激穴絹権憲源厳己呼誤后孝皇紅降鋼刻穀骨困砂座済裁策冊蚕至私姿視詞誌磁射捨尺若樹収宗就衆従縦縮熟純処署諸除将傷障城蒸針仁垂推寸盛聖誠宣専泉洗染善奏窓創装層操蔵臓存尊宅担探段暖値仲宙忠著庁頂潮賃痛展討党糖届難乳認納脳派拝背肺俳班晩否批秘腹奮並陛閉片補暮宝訪亡忘棒枚幕密盟模訳郵優幼欲翌乱卵覧裏律臨朗論"
+    };
+    // 小学生がよく使う熟語・複合語辞書（国語辞典掲載の日常語彙・学習語彙・熟語を網羅）
     const KANJI_DICT = [
-      // --- 1年生配当漢字 (g: 1) ---
-      { yomi: "わたし", word: "私", g: 6 },
-      { yomi: "ぼく", word: "僕", g: 6 },
-      { yomi: "いち", word: "一", g: 1 }, { yomi: "ひとつ", word: "一つ", g: 1 }, { yomi: "ひとり", word: "一人", g: 1 },
-      { yomi: "に", word: "二", g: 1 }, { yomi: "ふたつ", word: "二つ", g: 1 }, { yomi: "ふたり", word: "二人", g: 1 },
-      { yomi: "さん", word: "三", g: 1 }, { yomi: "みっつ", word: "三つ", g: 1 },
-      { yomi: "よん", word: "四", g: 1 }, { yomi: "よっつ", word: "四つ", g: 1 },
-      { yomi: "ご", word: "五", g: 1 }, { yomi: "いつつ", word: "五つ", g: 1 },
-      { yomi: "ろく", word: "六", g: 1 }, { yomi: "むっつ", word: "六つ", g: 1 },
-      { yomi: "なな", word: "七", g: 1 }, { yomi: "しち", word: "七", g: 1 },
-      { yomi: "はち", word: "八", g: 1 }, { yomi: "やっつ", word: "八つ", g: 1 },
-      { yomi: "きゅう", word: "九", g: 1 }, { yomi: "じゅう", word: "十", g: 1 },
-      { yomi: "ひゃく", word: "百", g: 1 }, { yomi: "せん", word: "千", g: 1 },
+      // 1年生（学校・自然・時間・体・家族・数・色・基本動作）
+      { yomi: "がっこう", word: "学校", g: 1 }, { yomi: "しょうがっこう", word: "小学校", g: 1 },
+      { yomi: "ちゅうがっこう", word: "中学校", g: 1 }, { yomi: "こうちょう", word: "校長", g: 2 },
+      { yomi: "せんせい", word: "先生", g: 1 }, { yomi: "せいと", word: "生徒", g: 4 },
+      { yomi: "じどう", word: "児童", g: 3 }, { yomi: "いちねんせい", word: "一年生", g: 1 },
+      { yomi: "いちねん", word: "一年", g: 1 }, { yomi: "がくねん", word: "学年", g: 1 },
+      { yomi: "おんなのこ", word: "女の子", g: 1 }, { yomi: "おとこのこ", word: "男の子", g: 1 },
+      { yomi: "おとな", word: "大人", g: 1 }, { yomi: "こども", word: "子ども", g: 1 },
       { yomi: "ひと", word: "人", g: 1 }, { yomi: "ひとびと", word: "人々", g: 1 },
-      { yomi: "おとこ", word: "男", g: 1 }, { yomi: "おんな", word: "女", g: 1 },
-      { yomi: "こ", word: "子", g: 1 }, { yomi: "こども", word: "子ども", g: 1 },
-      { yomi: "がっこう", word: "学校", g: 1 }, { yomi: "がくねん", word: "学年", g: 1 },
-      { yomi: "いちねんせい", word: "一年生", g: 1 }, { yomi: "にねんせい", word: "二年生", g: 1 },
-      { yomi: "さんねんせい", word: "三年生", g: 1 }, { yomi: "よねんせい", word: "四年生", g: 1 },
-      { yomi: "ごねんせい", word: "五年生", g: 1 }, { yomi: "ろくねんせい", word: "六年生", g: 1 },
-      { yomi: "せんせい", word: "先生", g: 1 }, { yomi: "せいと", word: "生徒", g: 3 },
-      { yomi: "ほん", word: "本", g: 1 }, { yomi: "じ", word: "字", g: 1 }, { yomi: "もじ", word: "文字", g: 1 },
-      { yomi: "ぶん", word: "文", g: 1 }, { yomi: "さくぶん", word: "作文", g: 2 },
-      { yomi: "なまえ", word: "名前", g: 2 }, { yomi: "な", word: "名", g: 1 },
-      { yomi: "め", word: "目", g: 1 }, { yomi: "みみ", word: "耳", g: 1 }, { yomi: "くち", word: "口", g: 1 },
-      { yomi: "て", word: "手", g: 1 }, { yomi: "あし", word: "足", g: 1 },
-      { yomi: "ちから", word: "力", g: 1 }, { yomi: "き", word: "気", g: 1 }, { yomi: "きもち", word: "気もち", g: 1 },
-      { yomi: "げんき", word: "元気", g: 1 }, { yomi: "てんき", word: "天気", g: 1 },
-      { yomi: "ひ", word: "日", g: 1 }, { yomi: "つき", word: "月", g: 1 }, { yomi: "みず", word: "水", g: 1 },
-      { yomi: "ひ", word: "火", g: 1 }, { yomi: "き", word: "木", g: 1 }, { yomi: "きん", word: "金", g: 1 }, { yomi: "つち", word: "土", g: 1 },
-      { yomi: "やま", word: "山", g: 1 }, { yomi: "かわ", word: "川", g: 1 }, { yomi: "そら", word: "空", g: 1 },
-      { yomi: "あめ", word: "雨", g: 1 }, { yomi: "はな", word: "花", g: 1 }, { yomi: "くさ", word: "草", g: 1 },
-      { yomi: "むし", word: "虫", g: 1 }, { yomi: "いぬ", word: "犬", g: 1 }, { yomi: "かい", word: "貝", g: 1 },
-      { yomi: "もり", word: "森", g: 1 }, { yomi: "はやし", word: "林", g: 1 },
-      { yomi: "うえ", word: "上", g: 1 }, { yomi: "した", word: "下", g: 1 }, { yomi: "なか", word: "中", g: 1 },
+      { yomi: "じんこう", word: "人口", g: 1 }, { yomi: "にんずう", word: "人数", g: 2 },
       { yomi: "みぎ", word: "右", g: 1 }, { yomi: "ひだり", word: "左", g: 1 },
+      { yomi: "さゆう", word: "左右", g: 1 }, { yomi: "うえ", word: "上", g: 1 },
+      { yomi: "した", word: "下", g: 1 }, { yomi: "じょうげ", word: "上下", g: 1 },
+      { yomi: "なか", word: "中", g: 1 }, { yomi: "ちゅうしん", word: "中心", g: 2 },
       { yomi: "おおきい", word: "大きい", g: 1 }, { yomi: "ちいさい", word: "小さい", g: 1 },
-      { yomi: "ただしい", word: "正しい", g: 1 }, { yomi: "はやい", word: "早い", g: 1 },
-      { yomi: "しろ", word: "白", g: 1 }, { yomi: "しろい", word: "白い", g: 1 },
-      { yomi: "あか", word: "赤", g: 1 }, { yomi: "あかい", word: "赤い", g: 1 },
-      { yomi: "あお", word: "青", g: 1 }, { yomi: "あおい", word: "青い", g: 1 },
-      { yomi: "みる", word: "見る", g: 1 }, { yomi: "いる", word: "入る", g: 1 }, { yomi: "はいる", word: "入る", g: 1 },
-      { yomi: "でる", word: "出る", g: 1 }, { yomi: "たつ", word: "立つ", g: 1 }, { yomi: "やすむ", word: "休む", g: 1 },
-      { yomi: "やすみ", word: "休み", g: 1 }, { yomi: "おと", word: "音", g: 1 }, { yomi: "くるま", word: "車", g: 1 },
-      { yomi: "まち", word: "町", g: 1 }, { yomi: "むら", word: "村", g: 1 }, { yomi: "たま", word: "玉", g: 1 },
-      { yomi: "おう", word: "王", g: 1 }, { yomi: "いと", word: "糸", g: 1 }, { yomi: "いし", word: "石", g: 1 },
+      { yomi: "だいしょう", word: "大小", g: 1 }, { yomi: "てんき", word: "天気", g: 1 },
+      { yomi: "あめ", word: "雨", g: 1 }, { yomi: "おおあめ", word: "大雨", g: 1 },
+      { yomi: "みず", word: "水", g: 1 }, { yomi: "すいどう", word: "水道", g: 2 },
+      { yomi: "すいちゅう", word: "水中", g: 1 }, { yomi: "くうちゅう", word: "空中", g: 1 },
+      { yomi: "やま", word: "山", g: 1 }, { yomi: "かざん", word: "火山", g: 1 },
+      { yomi: "かわ", word: "川", g: 1 }, { yomi: "かせん", word: "河川", g: 5 },
+      { yomi: "もり", word: "森", g: 1 }, { yomi: "はやし", word: "林", g: 1 },
+      { yomi: "しんりん", word: "森林", g: 1 }, { yomi: "あおぞら", word: "青空", g: 1 },
+      { yomi: "ゆうひ", word: "夕日", g: 1 }, { yomi: "ゆうがた", word: "夕方", g: 2 },
+      { yomi: "つきみ", word: "月見", g: 1 }, { yomi: "まんげつ", word: "満月", g: 4 },
+      { yomi: "はな", word: "花", g: 1 }, { yomi: "はなび", word: "花火", g: 1 },
+      { yomi: "くさ", word: "草", g: 1 }, { yomi: "くさばな", word: "草花", g: 1 },
+      { yomi: "いぬ", word: "犬", g: 1 }, { yomi: "むし", word: "虫", g: 1 },
+      { yomi: "こんちゅう", word: "昆虫", g: 6 }, { yomi: "ほん", word: "本", g: 1 },
+      { yomi: "ほんもの", word: "本物", g: 3 }, { yomi: "なまえ", word: "名前", g: 2 },
+      { yomi: "じ", word: "字", g: 1 }, { yomi: "もじ", word: "文字", g: 1 },
+      { yomi: "かんじ", word: "漢字", g: 3 }, { yomi: "ぶん", word: "文", g: 1 },
+      { yomi: "さくぶん", word: "作文", g: 2 }, { yomi: "ぶんしょう", word: "文章", g: 3 },
+      { yomi: "ちから", word: "力", g: 1 }, { yomi: "て", word: "手", g: 1 },
+      { yomi: "あし", word: "足", g: 1 }, { yomi: "め", word: "目", g: 1 },
+      { yomi: "みみ", word: "耳", g: 1 }, { yomi: "くち", word: "口", g: 1 },
+      { yomi: "てあし", word: "手足", g: 1 }, { yomi: "ただしい", word: "正しい", g: 1 },
+      { yomi: "はやい", word: "早い", g: 1 }, { yomi: "やすみ", word: "休み", g: 1 },
+      { yomi: "やすむ", word: "休む", g: 1 }, { yomi: "きゅうじつ", word: "休日", g: 2 },
+      { yomi: "みる", word: "見る", g: 1 }, { yomi: "けんがく", word: "見学", g: 1 },
+      { yomi: "でる", word: "出る", g: 1 }, { yomi: "はいる", word: "入る", g: 1 },
+      { yomi: "いりぐち", word: "入り口", g: 1 }, { yomi: "でぐち", word: "出口", g: 1 },
+      { yomi: "でいりぐち", word: "出入り口", g: 1 }, { yomi: "たつ", word: "立つ", g: 1 },
+      { yomi: "じりつ", word: "自立", g: 2 }, { yomi: "しろい", word: "白い", g: 1 },
+      { yomi: "あかい", word: "赤い", g: 1 }, { yomi: "あおい", word: "青い", g: 1 },
+      { yomi: "おかね", word: "お金", g: 1 }, { yomi: "おうさま", word: "王様", g: 3 },
+      { yomi: "まいにち", word: "毎日", g: 2 }, { yomi: "まいとし", word: "毎年", g: 2 },
+      { yomi: "まいねん", word: "毎年", g: 2 }, { yomi: "まいしゅう", word: "毎週", g: 2 },
+      { yomi: "まいつき", word: "毎月", g: 2 }, { yomi: "ぜんぶ", word: "全部", g: 3 },
+      { yomi: "いちばん", word: "一番", g: 2 }, { yomi: "さいしょ", word: "最初", g: 4 },
+      { yomi: "さいご", word: "最後", g: 4 }, { yomi: "ひとつ", word: "一つ", g: 1 },
+      { yomi: "ふたつ", word: "二つ", g: 1 }, { yomi: "みっつ", word: "三つ", g: 1 },
+      { yomi: "よっつ", word: "四つ", g: 1 }, { yomi: "いつつ", word: "五つ", g: 1 },
+      { yomi: "むっつ", word: "六つ", g: 1 }, { yomi: "ななつ", word: "七つ", g: 1 },
+      { yomi: "やっつ", word: "八つ", g: 1 }, { yomi: "ここのつ", word: "九つ", g: 1 },
+      { yomi: "とお", word: "十", g: 1 }, { yomi: "ひとり", word: "一人", g: 1 },
+      { yomi: "ふたり", word: "二人", g: 1 }, { yomi: "さんにん", word: "三人", g: 1 },
 
-      // --- 2年生配当漢字 (g: 2) ---
-      { yomi: "おもう", word: "思う", g: 2 }, { yomi: "おもいます", word: "思います", g: 2 },
-      { yomi: "かんがえる", word: "考える", g: 2 }, { yomi: "かんがえ", word: "考え", g: 2 },
-      { yomi: "いう", word: "言う", g: 2 }, { yomi: "いいます", word: "言います", g: 2 }, { yomi: "ことば", word: "言葉", g: 3 },
-      { yomi: "はなす", word: "話す", g: 2 }, { yomi: "はなし", word: "話", g: 2 }, { yomi: "はなしあい", word: "話し合い", g: 2 },
-      { yomi: "きく", word: "聞く", g: 2 }, { yomi: "かく", word: "書く", g: 2 }, { yomi: "よむ", word: "読む", g: 2 },
+      // 2年生（学校生活・教科・時間・家族・感情・基本動詞・形容詞）
       { yomi: "ともだち", word: "友だち", g: 2 }, { yomi: "ゆうじん", word: "友人", g: 2 },
-      { yomi: "じぶん", word: "自分", g: 2 }, { yomi: "みんな", word: "皆", g: 6 },
-      { yomi: "たいせつ", word: "大切", g: 2 }, { yomi: "だいじ", word: "大事", g: 3 },
-      { yomi: "おなじ", word: "同じ", g: 2 }, { yomi: "ちがう", word: "違う", g: 4 },
-      { yomi: "じかん", word: "時間", g: 2 }, { yomi: "まいにち", word: "毎日", g: 2 },
-      { yomi: "きょう", word: "今日", g: 2 }, { yomi: "あした", word: "明日", g: 2 }, { yomi: "きのう", word: "昨日", g: 4 },
-      { yomi: "あさ", word: "朝", g: 2 }, { yomi: "ひる", word: "昼", g: 2 }, { yomi: "よる", word: "夜", g: 2 },
-      { yomi: "はる", word: "春", g: 2 }, { yomi: "なつ", word: "夏", g: 2 }, { yomi: "あき", word: "秋", g: 2 }, { yomi: "ふゆ", word: "冬", g: 2 },
-      { yomi: "いえ", word: "家", g: 2 }, { yomi: "かぞく", word: "家族", g: 3 },
-      { yomi: "ちち", word: "父", g: 2 }, { yomi: "はは", word: "母", g: 2 },
-      { yomi: "あに", word: "兄", g: 2 }, { yomi: "あね", word: "姉", g: 2 },
+      { yomi: "しんゆう", word: "親友", g: 2 }, { yomi: "にねんせい", word: "二年生", g: 2 },
+      { yomi: "じかん", word: "時間", g: 2 }, { yomi: "じこく", word: "時刻", g: 6 },
+      { yomi: "じかんわり", word: "時間割", g: 6 }, { yomi: "やすみじかん", word: "休み時間", g: 2 },
+      { yomi: "ひるやすみ", word: "昼休み", g: 2 }, { yomi: "おんがく", word: "音楽", g: 2 },
+      { yomi: "がっき", word: "楽器", g: 4 }, { yomi: "こくご", word: "国語", g: 2 },
+      { yomi: "さんすう", word: "算数", g: 2 }, { yomi: "けいさん", word: "計算", g: 2 },
+      { yomi: "ずけい", word: "図形", g: 2 }, { yomi: "せいかつ", word: "生活", g: 2 },
+      { yomi: "せいかつか", word: "生活科", g: 2 }, { yomi: "たいいく", word: "体育", g: 3 },
+      { yomi: "りか", word: "理科", g: 2 }, { yomi: "しゃかい", word: "社会", g: 2 },
+      { yomi: "ずこう", word: "図工", g: 2 }, { yomi: "どうとく", word: "道徳", g: 5 },
+      { yomi: "きょうか", word: "教科", g: 2 }, { yomi: "きょうかしょ", word: "教科書", g: 2 },
+      { yomi: "きょうしつ", word: "教室", g: 2 }, { yomi: "としょしつ", word: "図書室", g: 2 },
+      { yomi: "としょかん", word: "図書館", g: 3 }, { yomi: "たいいくかん", word: "体育館", g: 3 },
+      { yomi: "こうてい", word: "校庭", g: 3 }, { yomi: "こうしゃ", word: "校舎", g: 5 },
+      { yomi: "こくばん", word: "黒板", g: 3 }, { yomi: "かぞく", word: "家族", g: 3 },
+      { yomi: "おとうさん", word: "お父さん", g: 2 }, { yomi: "おかあさん", word: "お母さん", g: 2 },
+      { yomi: "おにいさん", word: "お兄さん", g: 2 }, { yomi: "おねえさん", word: "お姉さん", g: 2 },
       { yomi: "おとうと", word: "弟", g: 2 }, { yomi: "いもうと", word: "妹", g: 2 },
-      { yomi: "たべる", word: "食べる", g: 2 }, { yomi: "のむ", word: "飲む", g: 3 },
-      { yomi: "いく", word: "行く", g: 2 }, { yomi: "くる", word: "来る", g: 2 }, { yomi: "かえる", word: "帰る", g: 2 },
-      { yomi: "つくる", word: "作る", g: 2 }, { yomi: "つかう", word: "使う", g: 3 },
-      { yomi: "おおい", word: "多い", g: 2 }, { yomi: "すくない", word: "少ない", g: 2 },
-      { yomi: "ながい", word: "長い", g: 2 }, { yomi: "みじかい", word: "短い", g: 3 },
-      { yomi: "たかい", word: "高い", g: 2 }, { yomi: "ひくい", word: "低い", g: 4 },
-      { yomi: "ひろい", word: "広い", g: 2 }, { yomi: "つよい", word: "強い", g: 2 }, { yomi: "よわい", word: "弱い", g: 2 },
+      { yomi: "きょうだい", word: "兄弟", g: 2 }, { yomi: "しまい", word: "姉妹", g: 2 },
+      { yomi: "りょうしん", word: "両親", g: 3 }, { yomi: "じぶん", word: "自分", g: 2 },
+      { yomi: "かんがえ", word: "考え", g: 2 }, { yomi: "かんがえる", word: "考える", g: 2 },
+      { yomi: "かんがえかた", word: "考え方", g: 2 }, { yomi: "おもう", word: "思う", g: 2 },
+      { yomi: "おもいます", word: "思います", g: 2 }, { yomi: "おもいやり", word: "思いやり", g: 2 },
+      { yomi: "いう", word: "言う", g: 2 }, { yomi: "いいます", word: "言います", g: 2 },
+      { yomi: "はなす", word: "話す", g: 2 }, { yomi: "はなし", word: "話", g: 2 },
+      { yomi: "はなしあい", word: "話し合い", g: 2 }, { yomi: "はなしあう", word: "話し合う", g: 2 },
+      { yomi: "かいわ", word: "会話", g: 2 }, { yomi: "きく", word: "聞く", g: 2 },
+      { yomi: "かく", word: "書く", g: 2 }, { yomi: "よむ", word: "読む", g: 2 },
+      { yomi: "たべる", word: "食べる", g: 2 }, { yomi: "たべもの", word: "食べ物", g: 3 },
+      { yomi: "のみもの", word: "飲み物", g: 3 }, { yomi: "しょくじ", word: "食事", g: 3 },
+      { yomi: "つくる", word: "作る", g: 2 }, { yomi: "こうさく", word: "工作", g: 2 },
+      { yomi: "さくひん", word: "作品", g: 3 }, { yomi: "いく", word: "行く", g: 2 },
+      { yomi: "くる", word: "来る", g: 2 }, { yomi: "かえる", word: "帰る", g: 2 },
+      { yomi: "あるく", word: "歩く", g: 2 }, { yomi: "はしる", word: "走る", g: 2 },
+      { yomi: "わかる", word: "分かる", g: 2 }, { yomi: "しる", word: "知る", g: 2 },
+      { yomi: "ちしき", word: "知識", g: 5 }, { yomi: "おしえる", word: "教える", g: 2 },
+      { yomi: "たのしい", word: "楽しい", g: 2 }, { yomi: "たのしみ", word: "楽しみ", g: 2 },
       { yomi: "あたらしい", word: "新しい", g: 2 }, { yomi: "ふるい", word: "古い", g: 2 },
-      { yomi: "たのしい", word: "楽しい", g: 2 }, { yomi: "こころ", word: "心", g: 2 },
-      { yomi: "こえ", word: "声", g: 2 }, { yomi: "うた", word: "歌", g: 2 }, { yomi: "え", word: "絵", g: 2 },
-      { yomi: "かみ", word: "紙", g: 2 }, { yomi: "いろ", word: "色", g: 2 }, { yomi: "かたち", word: "形", g: 2 },
-      { yomi: "うみ", word: "海", g: 2 }, { yomi: "いけ", word: "池", g: 2 }, { yomi: "ほし", word: "星", g: 2 },
-      { yomi: "ゆき", word: "雪", g: 2 }, { yomi: "かぜ", word: "風", g: 2 }, { yomi: "くも", word: "雲", g: 2 },
-      { yomi: "こうえん", word: "公園", g: 2 }, { yomi: "としょしつ", word: "図書室", g: 2 },
-      { yomi: "さんすう", word: "算数", g: 2 }, { yomi: "こくご", word: "国語", g: 2 },
-      { yomi: "りか", word: "理科", g: 2 }, { yomi: "しゃかい", word: "社会", g: 4 },
-      { yomi: "おんがく", word: "音楽", g: 2 }, { yomi: "たいいく", word: "体育", g: 3 },
+      { yomi: "しんきゅう", word: "新旧", g: 5 }, { yomi: "ながい", word: "長い", g: 2 },
+      { yomi: "たかい", word: "高い", g: 2 }, { yomi: "ひろい", word: "広い", g: 2 },
+      { yomi: "つよい", word: "強い", g: 2 }, { yomi: "よわい", word: "弱い", g: 2 },
+      { yomi: "おおい", word: "多い", g: 2 }, { yomi: "すくない", word: "少ない", g: 2 },
+      { yomi: "おなじ", word: "同じ", g: 2 }, { yomi: "ちかい", word: "近い", g: 2 },
+      { yomi: "とおい", word: "遠い", g: 2 }, { yomi: "あかるい", word: "明るい", g: 2 },
+      { yomi: "くらい", word: "暗い", g: 3 }, { yomi: "げんき", word: "元気", g: 2 },
+      { yomi: "きもち", word: "気持ち", g: 3 }, { yomi: "こころ", word: "心", g: 2 },
+      { yomi: "からだ", word: "体", g: 2 }, { yomi: "たいりょく", word: "体力", g: 2 },
+      { yomi: "あたま", word: "頭", g: 2 }, { yomi: "かお", word: "顔", g: 2 },
+      { yomi: "えがお", word: "笑顔", g: 4 }, { yomi: "こえ", word: "声", g: 2 },
+      { yomi: "いろ", word: "色", g: 2 }, { yomi: "え", word: "絵", g: 2 },
+      { yomi: "かいが", word: "絵画", g: 2 }, { yomi: "うた", word: "歌", g: 2 },
+      { yomi: "かみ", word: "紙", g: 2 }, { yomi: "いえ", word: "家", g: 2 },
+      { yomi: "かてい", word: "家庭", g: 3 }, { yomi: "みせ", word: "店", g: 2 },
+      { yomi: "しょうてん", word: "商店", g: 3 }, { yomi: "みち", word: "道", g: 2 },
+      { yomi: "どうろ", word: "道路", g: 3 }, { yomi: "うみ", word: "海", g: 2 },
+      { yomi: "かいよう", word: "海洋", g: 3 }, { yomi: "いけ", word: "池", g: 2 },
+      { yomi: "みずうみ", word: "湖", g: 3 }, { yomi: "くに", word: "国", g: 2 },
+      { yomi: "がいこく", word: "外国", g: 2 }, { yomi: "がいこくご", word: "外国語", g: 2 },
+      { yomi: "えいご", word: "英語", g: 4 }, { yomi: "あさ", word: "朝", g: 2 },
+      { yomi: "ひる", word: "昼", g: 2 }, { yomi: "よる", word: "夜", g: 2 },
+      { yomi: "きょう", word: "今日", g: 2 }, { yomi: "きのう", word: "昨日", g: 4 },
+      { yomi: "あした", word: "明日", g: 2 }, { yomi: "こんしゅう", word: "今週", g: 2 },
+      { yomi: "らいしゅう", word: "来週", g: 2 }, { yomi: "せんしゅう", word: "先週", g: 2 },
+      { yomi: "こんげつ", word: "今月", g: 2 }, { yomi: "らいげつ", word: "来月", g: 2 },
+      { yomi: "せんげつ", word: "先月", g: 2 }, { yomi: "ことし", word: "今年", g: 2 },
+      { yomi: "らいねん", word: "来年", g: 2 }, { yomi: "きょねん", word: "去年", g: 3 },
+      { yomi: "はる", word: "春", g: 2 }, { yomi: "なつ", word: "夏", g: 2 },
+      { yomi: "あき", word: "秋", g: 2 }, { yomi: "ふゆ", word: "冬", g: 2 },
+      { yomi: "なつやすみ", word: "夏休み", g: 2 }, { yomi: "ふゆやすみ", word: "冬休み", g: 2 },
+      { yomi: "はるやすみ", word: "春休み", g: 2 }, { yomi: "あさごはん", word: "朝ごはん", g: 2 },
+      { yomi: "ひるごはん", word: "昼ごはん", g: 2 }, { yomi: "ばんごはん", word: "晩ごはん", g: 6 },
+      { yomi: "べんきょう", word: "勉強", g: 3 }, { yomi: "こうえん", word: "公園", g: 2 },
+      { yomi: "どうぶつえん", word: "動物園", g: 3 }, { yomi: "すいぞくかん", word: "水族館", g: 3 },
+      { yomi: "ゆうえんち", word: "遊園地", g: 3 }, { yomi: "かがくかん", word: "科学館", g: 3 },
+      { yomi: "でんしゃ", word: "電車", g: 2 }, { yomi: "じどうしゃ", word: "自動車", g: 2 },
+      { yomi: "じてんしゃ", word: "自転車", g: 3 }, { yomi: "こうつう", word: "交通", g: 2 },
+      { yomi: "ほこうしゃ", word: "歩行者", g: 3 }, { yomi: "しんごう", word: "信号", g: 4 },
+      { yomi: "ちゅうい", word: "注意", g: 3 }, { yomi: "いっしょうけんめい", word: "一生懸命", g: 3 },
+      { yomi: "まいあさ", word: "毎朝", g: 2 }, { yomi: "まいばん", word: "毎晩", g: 6 },
+      { yomi: "かいもの", word: "買い物", g: 3 }, { yomi: "うりば", word: "売り場", g: 2 },
+      { yomi: "ちず", word: "地図", g: 2 }, { yomi: "ちきゅう", word: "地球", g: 3 },
+      { yomi: "たいよう", word: "太陽", g: 3 }, { yomi: "うちゅう", word: "宇宙", g: 6 },
 
-      // --- 3年生配当漢字 (g: 3) ---
-      { yomi: "りゆう", word: "理由", g: 3 }, { yomi: "いけん", word: "意見", g: 4 },
-      { yomi: "きもち", word: "気持ち", g: 3 }, { yomi: "あいて", word: "相手", g: 3 },
-      { yomi: "だいじ", word: "大事", g: 3 }, { yomi: "じゆう", word: "自由", g: 3 },
-      { yomi: "あんぜん", word: "安全", g: 3 }, { yomi: "きけん", word: "危険", g: 6 },
+      // 3年生（学習・社会・自然・安全・感情・学校行事）
+      { yomi: "いけん", word: "意見", g: 3 }, { yomi: "りゆう", word: "理由", g: 3 },
+      { yomi: "さんねんせい", word: "三年生", g: 3 }, { yomi: "がっきゅう", word: "学級", g: 3 },
+      { yomi: "がっきゅうかい", word: "学級会", g: 3 }, { yomi: "がっき", word: "学期", g: 3 },
+      { yomi: "かかり", word: "係", g: 3 }, { yomi: "かつどう", word: "活動", g: 3 },
+      { yomi: "じゅぎょう", word: "授業", g: 5 }, { yomi: "がくしゅう", word: "学習", g: 3 },
+      { yomi: "しゅくだい", word: "宿題", g: 3 }, { yomi: "よしゅう", word: "予習", g: 3 },
+      { yomi: "ふくしゅう", word: "復習", g: 5 }, { yomi: "どくしょ", word: "読書", g: 3 },
+      { yomi: "ものがたり", word: "物語", g: 3 }, { yomi: "ずかん", word: "図鑑", g: 2 },
+      { yomi: "じてん", word: "辞典", g: 4 }, { yomi: "こくごじてん", word: "国語辞典", g: 4 },
+      { yomi: "ことば", word: "言葉", g: 3 }, { yomi: "いみ", word: "意味", g: 3 },
+      { yomi: "もんだい", word: "問題", g: 3 }, { yomi: "しつもん", word: "質問", g: 5 },
+      { yomi: "こたえ", word: "答え", g: 2 }, { yomi: "かいとう", word: "回答", g: 2 },
+      { yomi: "せつめい", word: "説明", g: 4 }, { yomi: "はっぴょう", word: "発表", g: 3 },
+      { yomi: "あいて", word: "相手", g: 3 }, { yomi: "なかま", word: "仲間", g: 4 },
+      { yomi: "ぜんいん", word: "全員", g: 3 }, { yomi: "あんぜん", word: "安全", g: 3 },
+      { yomi: "あんしん", word: "安心", g: 3 }, { yomi: "きけん", word: "危険", g: 6 },
+      { yomi: "じこ", word: "事故", g: 5 }, { yomi: "だいじ", word: "大事", g: 3 },
+      { yomi: "たいせつ", word: "大切", g: 2 }, { yomi: "ひつよう", word: "必要", g: 4 },
       { yomi: "べんり", word: "便利", g: 4 }, { yomi: "ふべん", word: "不便", g: 4 },
-      { yomi: "へいわ", word: "平和", g: 3 }, { yomi: "しぜん", word: "自然", g: 4 },
-      { yomi: "せかい", word: "世界", g: 3 }, { yomi: "にほん", word: "日本", g: 2 },
-      { yomi: "ちきゅう", word: "地球", g: 3 }, { yomi: "たいよう", word: "太陽", g: 3 },
-      { yomi: "どうぶつ", word: "動物", g: 3 }, { yomi: "しょくぶつ", word: "植物", g: 3 },
-      { yomi: "たべもの", word: "食べ物", g: 3 }, { yomi: "のみもの", word: "飲み物", g: 3 },
-      { yomi: "のりもの", word: "乗り物", g: 3 }, { yomi: "いきもの", word: "生き物", g: 3 },
-      { yomi: "べんきょう", word: "勉強", g: 3 }, { yomi: "しゅくだい", word: "宿題", g: 3 },
-      { yomi: "じゅぎょう", word: "授業", g: 5 }, { yomi: "れんしゅう", word: "練習", g: 3 },
-      { yomi: "きょうしつ", word: "教室", g: 2 }, { yomi: "うんどう", word: "運動", g: 3 },
+      { yomi: "しぜん", word: "自然", g: 4 }, { yomi: "どうぶつ", word: "動物", g: 3 },
+      { yomi: "しょくぶつ", word: "植物", g: 3 }, { yomi: "いきもの", word: "生き物", g: 3 },
+      { yomi: "きせつ", word: "季節", g: 4 }, { yomi: "うんどう", word: "運動", g: 3 },
       { yomi: "うんどうかい", word: "運動会", g: 3 }, { yomi: "えんそく", word: "遠足", g: 2 },
-      { yomi: "しつもん", word: "質問", g: 5 }, { yomi: "こたえ", word: "答え", g: 2 },
-      { yomi: "もんだい", word: "問題", g: 4 }, { yomi: "けっか", word: "結果", g: 4 },
-      { yomi: "いみ", word: "意味", g: 3 }, { yomi: "やくにたつ", word: "役に立つ", g: 3 },
-      { yomi: "たすける", word: "助ける", g: 3 }, { yomi: "たすけあう", word: "助け合う", g: 3 },
+      { yomi: "きゅうしょく", word: "給食", g: 4 }, { yomi: "おべんとう", word: "お弁当", g: 5 },
+      { yomi: "のむ", word: "飲む", g: 3 }, { yomi: "つかう", word: "使う", g: 3 },
       { yomi: "まもる", word: "守る", g: 3 }, { yomi: "きめる", word: "決める", g: 3 },
-      { yomi: "かわる", word: "変わる", g: 4 }, { yomi: "ふかまる", word: "深まる", g: 3 },
       { yomi: "すすむ", word: "進む", g: 3 }, { yomi: "あつまる", word: "集まる", g: 3 },
-      { yomi: "わける", word: "分ける", g: 2 }, { yomi: "くらべる", word: "比べる", g: 5 },
-      { yomi: "しる", word: "知る", g: 2 }, { yomi: "おぼえる", word: "覚える", g: 4 },
-      { yomi: "わすれる", word: "忘れる", g: 6 }, { yomi: "おもいだす", word: "思い出す", g: 2 },
-      { yomi: "やさしい", word: "優しい", g: 6 }, { yomi: "むずかしい", word: "難しい", g: 6 },
-      { yomi: "はやい", word: "速い", g: 3 }, { yomi: "おそい", word: "遅い", g: 6 },
-      { yomi: "あつい", word: "暑い", g: 3 }, { yomi: "さむい", word: "寒い", g: 3 },
-      { yomi: "あたたかい", word: "暖かい", g: 6 }, { yomi: "すずしい", word: "涼しい", g: 6 },
-      { yomi: "かるい", word: "軽い", g: 3 }, { yomi: "おもい", word: "重い", g: 3 },
-      { yomi: "みがく", word: "磨く", g: 6 }, { yomi: "はこぶ", word: "運ぶ", g: 3 },
+      { yomi: "しらべる", word: "調べる", g: 3 }, { yomi: "たすける", word: "助ける", g: 3 },
+      { yomi: "たすけあう", word: "助け合う", g: 3 }, { yomi: "ふかまる", word: "深まる", g: 3 },
+      { yomi: "みじかい", word: "短い", g: 3 }, { yomi: "かるい", word: "軽い", g: 3 },
+      { yomi: "おもい", word: "重い", g: 3 }, { yomi: "あつい", word: "暑い", g: 3 },
+      { yomi: "さむい", word: "寒い", g: 3 }, { yomi: "わるい", word: "悪い", g: 3 },
+      { yomi: "やさしい", word: "優しい", g: 6 }, { yomi: "しゅうかん", word: "習慣", g: 5 },
+      { yomi: "しゅうちゅう", word: "集中", g: 3 }, { yomi: "しゅうちゅうりょく", word: "集中力", g: 3 },
+      { yomi: "くふう", word: "工夫", g: 2 }, { yomi: "かいぜん", word: "改善", g: 5 },
+      { yomi: "れんしゅう", word: "練習", g: 3 }, { yomi: "ほんばん", word: "本番", g: 2 },
+      { yomi: "しあい", word: "試合", g: 4 }, { yomi: "しょうぶ", word: "勝負", g: 3 },
+      { yomi: "きょうぎ", word: "競技", g: 4 }, { yomi: "ゆうしょう", word: "優勝", g: 6 },
+      { yomi: "にゅうしょう", word: "入賞", g: 4 }, { yomi: "おうえん", word: "応援", g: 5 },
+      { yomi: "せいか", word: "成果", g: 4 }, { yomi: "せいちょう", word: "成長", g: 4 },
+      { yomi: "へいわ", word: "平和", g: 3 }, { yomi: "こうりゅう", word: "交流", g: 3 },
+      { yomi: "たいわ", word: "対話", g: 3 }, { yomi: "びょうどう", word: "平等", g: 3 },
+      { yomi: "こうへい", word: "公平", g: 3 }, { yomi: "たすうけつ", word: "多数決", g: 3 },
+      { yomi: "いいんかい", word: "委員会", g: 3 }, { yomi: "ぎょうじ", word: "行事", g: 3 },
+      { yomi: "ぶんか", word: "文化", g: 3 }, { yomi: "せかい", word: "世界", g: 3 },
+      { yomi: "にほん", word: "日本", g: 2 }, { yomi: "かんじる", word: "感じる", g: 3 },
+      { yomi: "かんそう", word: "感想", g: 3 }, { yomi: "かんそうぶん", word: "感想文", g: 3 },
+      { yomi: "そうぞう", word: "想像", g: 5 }, { yomi: "ひょうげん", word: "表現", g: 5 },
+      { yomi: "りかい", word: "理解", g: 5 }, { yomi: "きろく", word: "記録", g: 4 },
+      { yomi: "めんせき", word: "面積", g: 5 }, { yomi: "たいせき", word: "体積", g: 5 },
+      { yomi: "はやさ", word: "速さ", g: 3 }, { yomi: "わりあい", word: "割合", g: 6 },
 
-      // --- 4年生配当漢字 (g: 4) ---
-      { yomi: "いけん", word: "意見", g: 4 }, { yomi: "さんせい", word: "賛成", g: 5 },
-      { yomi: "はんたい", word: "反対", g: 3 }, { yomi: "はんろん", word: "反論", g: 6 },
-      { yomi: "ぎろん", word: "議論", g: 6 }, { yomi: "せつめい", word: "説明", g: 4 },
-      { yomi: "ぐたいてき", word: "具体的", g: 4 }, { yomi: "れい", word: "例", g: 4 },
-      { yomi: "たとえば", word: "例えば", g: 4 }, { yomi: "けいけん", word: "経験", g: 5 },
-      { yomi: "じじつ", word: "事実", g: 3 }, { yomi: "ひつよう", word: "必要", g: 4 },
-      { yomi: "たいせつ", word: "大切", g: 2 }, { yomi: "じゅうよう", word: "重要", g: 4 },
-      { yomi: "きょうりょく", word: "協力", g: 4 }, { yomi: "どりょく", word: "努力", g: 4 },
-      { yomi: "せいちょう", word: "成長", g: 4 }, { yomi: "せいこう", word: "成功", g: 4 },
-      { yomi: "しっぱい", word: "失敗", g: 4 }, { yomi: "ちゅうい", word: "注意", g: 4 },
-      { yomi: "けんこう", word: "健康", g: 4 }, { yomi: "えいよう", word: "栄養", g: 5 },
-      { yomi: "かんきょう", word: "環境", g: 5 }, { yomi: "しげん", word: "資源", g: 5 },
-      { yomi: "ちいき", word: "地域", g: 6 }, { yomi: "でんとう", word: "伝統", g: 6 },
-      { yomi: "ぶんか", word: "文化", g: 3 }, { yomi: "れきし", word: "歴史", g: 5 },
-      { yomi: "しゃかい", word: "社会", g: 4 }, { yomi: "せいかつ", word: "生活", g: 2 },
-      { yomi: "しゅうかん", word: "習慣", g: 5 }, { yomi: "やくそく", word: "約束", g: 4 },
-      { yomi: "こうへい", word: "公平", g: 4 }, { yomi: "びょうどう", word: "平等", g: 4 },
-      { yomi: "かんしゃ", word: "感謝", g: 5 }, { yomi: "しんらい", word: "信頼", g: 6 },
-      { yomi: "つたえる", word: "伝える", g: 4 }, { yomi: "つたわる", word: "伝わる", g: 4 },
-      { yomi: "みとめる", word: "認める", g: 6 }, { yomi: "えらぶ", word: "選ぶ", g: 4 },
-      { yomi: "くらべる", word: "比べる", g: 5 }, { yomi: "しらべる", word: "調べる", g: 3 },
-      { yomi: "まとめる", word: "まとめる", g: 1 }, { yomi: "ふえる", word: "増える", g: 5 },
-      { yomi: "へる", word: "減る", g: 5 }, { yomi: "のこる", word: "残る", g: 4 },
-      { yomi: "つづく", word: "続く", g: 4 }, { yomi: "つづける", word: "続ける", g: 4 },
-      { yomi: "はたらく", word: "働く", g: 4 }, { yomi: "うごく", word: "動く", g: 3 },
+      // 4年生（都道府県・社会・健康・実験観察・議論表現）
+      { yomi: "よねんせい", word: "四年生", g: 4 }, { yomi: "たちば", word: "立場", g: 4 },
+      { yomi: "ぐたいれい", word: "具体例", g: 4 }, { yomi: "ぐたいてき", word: "具体的", g: 4 },
+      { yomi: "きょうりょく", word: "協力", g: 4 }, { yomi: "やくそく", word: "約束", g: 4 },
+      { yomi: "けいかく", word: "計画", g: 4 }, { yomi: "せいり", word: "整理", g: 4 },
+      { yomi: "せいとん", word: "整頓", g: 4 }, { yomi: "じっけん", word: "実験", g: 4 },
+      { yomi: "かんさつ", word: "観察", g: 4 }, { yomi: "けんこう", word: "健康", g: 4 },
+      { yomi: "えいよう", word: "栄養", g: 4 }, { yomi: "れきし", word: "歴史", g: 4 },
+      { yomi: "せつやく", word: "節約", g: 4 }, { yomi: "しょくりょう", word: "食料", g: 4 },
+      { yomi: "しょうひ", word: "消費", g: 4 }, { yomi: "しょうひしゃ", word: "消費者", g: 4 },
+      { yomi: "しゅたいてき", word: "主体的", g: 4 }, { yomi: "どりょく", word: "努力", g: 4 },
+      { yomi: "けっか", word: "結果", g: 4 }, { yomi: "かだい", word: "課題", g: 4 },
+      { yomi: "ちょうせん", word: "挑戦", g: 4 }, { yomi: "そつぎょう", word: "卒業", g: 4 },
+      { yomi: "しんがく", word: "進学", g: 3 }, { yomi: "ちがう", word: "違う", g: 4 },
+      { yomi: "かわる", word: "変わる", g: 4 }, { yomi: "かえる", word: "変える", g: 4 },
+      { yomi: "へんか", word: "変化", g: 4 }, { yomi: "つたえる", word: "伝える", g: 4 },
+      { yomi: "えらぶ", word: "選ぶ", g: 4 }, { yomi: "つづく", word: "続く", g: 4 },
+      { yomi: "つづける", word: "続ける", g: 4 }, { yomi: "のこる", word: "残る", g: 4 },
+      { yomi: "のこす", word: "残す", g: 4 }, { yomi: "おぼえる", word: "覚える", g: 4 },
+      { yomi: "じゆう", word: "自由", g: 3 }, { yomi: "じゆうけんきゅう", word: "自由研究", g: 3 },
+      { yomi: "とどうふけん", word: "都道府県", g: 4 }, { yomi: "かんこう", word: "観光", g: 4 },
+      { yomi: "かんこうきゃく", word: "観光客", g: 4 }, { yomi: "しせつ", word: "施設", g: 5 },
+      { yomi: "いじゅう", word: "移住", g: 5 }, { yomi: "せいげん", word: "制限", g: 5 },
+      { yomi: "きそく", word: "規則", g: 5 }, { yomi: "きじゅん", word: "基準", g: 5 },
+      { yomi: "はんだん", word: "判断", g: 5 }, { yomi: "かいけつ", word: "解決", g: 5 },
+      { yomi: "ふせぐ", word: "防ぐ", g: 5 }, { yomi: "よぼう", word: "予防", g: 5 },
+      { yomi: "じゅんび", word: "準備", g: 5 }, { yomi: "せきにん", word: "責任", g: 5 },
+      { yomi: "せきにんかん", word: "責任感", g: 5 }, { yomi: "しりょう", word: "資料", g: 5 },
+      { yomi: "ちょうさ", word: "調査", g: 5 }, { yomi: "ほうこく", word: "報告", g: 5 },
+      { yomi: "じじつ", word: "事実", g: 4 }, { yomi: "げんいん", word: "原因", g: 5 },
+      { yomi: "えいきょう", word: "影響", g: 5 }, { yomi: "こうか", word: "効果", g: 5 },
+      { yomi: "こうりつ", word: "効率", g: 5 }, { yomi: "けいざい", word: "経済", g: 5 },
+      { yomi: "さんぎょう", word: "産業", g: 5 }, { yomi: "ぎじゅつ", word: "技術", g: 5 },
+      { yomi: "はってん", word: "発展", g: 6 }, { yomi: "しんぽ", word: "進歩", g: 3 },
+      { yomi: "もくひょう", word: "目標", g: 4 }, { yomi: "ゆめ", word: "夢", g: 5 },
+      { yomi: "ゆうき", word: "勇気", g: 4 }, { yomi: "じしん", word: "自信", g: 4 },
+      { yomi: "かんしゃ", word: "感謝", g: 5 }, { yomi: "きぼう", word: "希望", g: 4 },
 
-      // --- 5・6年生配当漢字 (g: 5, 6) ---
-      { yomi: "たちば", word: "立場", g: 2 }, { yomi: "してん", word: "視点", g: 6 },
-      { yomi: "こんきょ", word: "根拠", g: 6 }, { yomi: "しゅちょう", word: "主張", g: 5 },
-      { yomi: "けつろん", word: "結論", g: 6 }, { yomi: "せっとくりょく", word: "説得力", g: 5 },
-      { yomi: "りかい", word: "理解", g: 5 }, { yomi: "なっとく", word: "納得", g: 5 },
-      { yomi: "きょうかん", word: "共感", g: 4 }, { yomi: "そんちょう", word: "尊重", g: 6 },
-      { yomi: "たようせい", word: "多様性", g: 5 }, { yomi: "たかくてき", word: "多角的", g: 6 },
-      { yomi: "せきにん", word: "責任", g: 5 }, { yomi: "じしゅせい", word: "自主性", g: 5 },
-      { yomi: "しゅたいてき", word: "主体的", g: 4 }, { yomi: "こうりつ", word: "効率", g: 5 },
-      { yomi: "じょうほう", word: "情報", g: 5 }, { yomi: "ぎじゅつ", word: "技術", g: 5 },
-      { yomi: "かつよう", word: "活用", g: 3 }, { yomi: "えいきょう", word: "影響", g: 6 },
-      { yomi: "かだい", word: "課題", g: 4 }, { yomi: "かいけつ", word: "解決", g: 5 },
-      { yomi: "くふう", word: "工夫", g: 4 }, { yomi: "かいぜん", word: "改善", g: 5 },
-      { yomi: "しょうらい", word: "将来", g: 6 }, { yomi: "みらい", word: "未来", g: 4 },
-      { yomi: "じぞくかのう", word: "持続可能", g: 5 }, { yomi: "こくさい", word: "国際", g: 5 },
-      { yomi: "へいわ", word: "平和", g: 3 }, { yomi: "いのち", word: "命", g: 3 },
-      { yomi: "かんそう", word: "感想", g: 3 }, { yomi: "ひょうか", word: "評価", g: 5 },
-      { yomi: "じこひょうか", word: "自己評価", g: 6 }, { yomi: "ふりかえり", word: "振り返り", g: 6 }
+      // 5年生（情報・環境・生産・政治・論理思考）
+      { yomi: "ごねんせい", word: "五年生", g: 5 }, { yomi: "こんきょ", word: "根拠", g: 5 },
+      { yomi: "しゅちょう", word: "主張", g: 5 }, { yomi: "せっとくりょく", word: "説得力", g: 5 },
+      { yomi: "じょうほう", word: "情報", g: 5 }, { yomi: "かんきょう", word: "環境", g: 5 },
+      { yomi: "しげん", word: "資源", g: 5 }, { yomi: "せいさん", word: "生産", g: 5 },
+      { yomi: "じきゅうりつ", word: "自給率", g: 5 }, { yomi: "じしゅせい", word: "自主性", g: 5 },
+      { yomi: "かてい", word: "過程", g: 5 }, { yomi: "けいけん", word: "経験", g: 5 },
+      { yomi: "ぼうさい", word: "防災", g: 5 }, { yomi: "でんとう", word: "伝統", g: 5 },
+      { yomi: "じんこうちのう", word: "人工知能", g: 5 }, { yomi: "こくさい", word: "国際", g: 5 },
+      { yomi: "かちかん", word: "価値観", g: 5 }, { yomi: "たようせい", word: "多様性", g: 5 },
+      { yomi: "ふえる", word: "増える", g: 5 }, { yomi: "へる", word: "減る", g: 5 },
+      { yomi: "くらべる", word: "比べる", g: 5 }, { yomi: "たしかめる", word: "確かめる", g: 5 },
+      { yomi: "じゅうし", word: "重視", g: 6 }, { yomi: "ゆうせん", word: "優先", g: 6 },
+      { yomi: "ていあん", word: "提案", g: 5 }, { yomi: "さんせい", word: "賛成", g: 5 },
+      { yomi: "はんたい", word: "反対", g: 3 }, { yomi: "ごうい", word: "合意", g: 3 },
+      { yomi: "かいぎ", word: "会議", g: 4 }, { yomi: "じっこう", word: "実行", g: 3 },
+      { yomi: "じっせん", word: "実践", g: 5 }, { yomi: "せつでん", word: "節電", g: 4 },
+      { yomi: "おんだんか", word: "温暖化", g: 6 }, { yomi: "ちきゅうおんだんか", word: "地球温暖化", g: 6 },
+      { yomi: "みらい", word: "未来", g: 4 }, { yomi: "しょうらい", word: "将来", g: 6 },
+      { yomi: "せいじ", word: "政治", g: 6 }, { yomi: "ほうりつ", word: "法律", g: 6 },
+      { yomi: "けんぽう", word: "憲法", g: 6 }, { yomi: "せんきょ", word: "選挙", g: 4 },
+      { yomi: "ふくし", word: "福祉", g: 4 }, { yomi: "じゅうみん", word: "住民", g: 4 },
+      { yomi: "びちく", word: "備蓄", g: 5 }, { yomi: "ほしょう", word: "保障", g: 5 },
+
+      // 6年生（抽象概念・議論・評価・多角的視点）
+      { yomi: "わたし", word: "私", g: 6 }, { yomi: "わたしたち", word: "私たち", g: 6 },
+      { yomi: "ろくねんせい", word: "六年生", g: 6 }, { yomi: "はんろん", word: "反論", g: 6 },
+      { yomi: "ぎろん", word: "議論", g: 6 }, { yomi: "やくわり", word: "役割", g: 6 },
+      { yomi: "ひなん", word: "避難", g: 6 }, { yomi: "ちいき", word: "地域", g: 6 },
+      { yomi: "けつろん", word: "結論", g: 6 }, { yomi: "なっとく", word: "納得", g: 6 },
+      { yomi: "そんちょう", word: "尊重", g: 6 }, { yomi: "ふりかえり", word: "振り返り", g: 6 },
+      { yomi: "たかくてき", word: "多角的", g: 6 }, { yomi: "してん", word: "視点", g: 6 },
+      { yomi: "ろんりてき", word: "論理的", g: 6 }, { yomi: "こうけん", word: "貢献", g: 6 },
+      { yomi: "みとめる", word: "認める", g: 6 }, { yomi: "わすれる", word: "忘れる", g: 6 },
+      { yomi: "いどむ", word: "挑む", g: 6 }, { yomi: "しこうりょく", word: "思考力", g: 2 },
+      { yomi: "しこうさくご", word: "試行錯誤", g: 6 }, { yomi: "けんせつてき", word: "建設的", g: 4 },
+      { yomi: "だとう", word: "妥当", g: 6 }, { yomi: "かくしん", word: "革新", g: 6 },
+      { yomi: "ふきゅう", word: "普及", g: 6 }, { yomi: "きょうどう", word: "協働", g: 4 },
+      { yomi: "しんらい", word: "信頼", g: 6 }, { yomi: "ふくざつ", word: "複雑", g: 5 },
+      { yomi: "しずか", word: "静か", g: 4 }, { yomi: "かんたん", word: "簡単", g: 6 },
+      { yomi: "とくべつ", word: "特別", g: 4 }, { yomi: "じゅうよう", word: "重要", g: 3 },
+      { yomi: "せいこう", word: "成功", g: 4 }, { yomi: "しっぱい", word: "失敗", g: 4 },
+      { yomi: "けってい", word: "決定", g: 3 }, { yomi: "さんか", word: "参加", g: 4 },
+      { yomi: "きょうそう", word: "競争", g: 4 }, { yomi: "ゆうこう", word: "有効", g: 5 },
+      { yomi: "せいかく", word: "正確", g: 5 }, { yomi: "めいかく", word: "明確", g: 5 },
+      { yomi: "こうせき", word: "功績", g: 6 }, { yomi: "しどうしゃ", word: "指導者", g: 5 },
+      { yomi: "けつだんりょく", word: "決断力", g: 5 }, { yomi: "ちょうせいりょく", word: "調整力", g: 3 },
+      { yomi: "じぞくかのう", word: "持続可能", g: 5 }, { yomi: "さいせいかのう", word: "再生可能", g: 5 },
+      { yomi: "ほうどう", word: "報道", g: 5 }, { yomi: "はっしん", word: "発信", g: 4 },
+      { yomi: "かくさん", word: "拡散", g: 6 }, { yomi: "ごかい", word: "誤解", g: 6 },
+      { yomi: "しゅうとく", word: "習得", g: 4 }, { yomi: "そんけい", word: "尊敬", g: 6 }
     ];
 
-    // =========================================================================
-    // 4. iOS風文字パネルデータ（添付 ios (1).html と同一の配列・文字セット＋サブガイド）
-    // =========================================================================
+    // 学年別許可漢字セットと判定関数・全1,026字単漢字音訓索引
+    const _ALLOWED_KANJI_CACHE = {};
+    function getAllowedKanjiSetForGrade(grade) {
+      if (!_ALLOWED_KANJI_CACHE[grade]) {
+        const set = new Set();
+        for (let g = 1; g <= grade; g++) {
+          for (const ch of (GRADE_KANJI_CHARS[g] || "")) set.add(ch);
+        }
+        _ALLOWED_KANJI_CACHE[grade] = set;
+      }
+      return _ALLOWED_KANJI_CACHE[grade];
+    }
+
+    function isWordAllowedForGrade(word, grade) {
+      const allowed = getAllowedKanjiSetForGrade(grade);
+      for (const ch of word) {
+        if (/[\u4E00-\u9FFF]/.test(ch) && !allowed.has(ch)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    const ALL_CHAR_BY_YOMI = {};
+    (() => {
+      const addYomi = (yomi, chars) => {
+        if (!ALL_CHAR_BY_YOMI[yomi]) ALL_CHAR_BY_YOMI[yomi] = [];
+        for (const c of chars) {
+          if (!ALL_CHAR_BY_YOMI[yomi].includes(c)) ALL_CHAR_BY_YOMI[yomi].push(c);
+        }
+      };
+      const baseReadings = [
+        ["いち","一"],["ひと","一"],["みぎ","右"],["う","右"],["あめ","雨"],["う","雨"],["えん","円"],["まる","円"],
+        ["おう","王"],["おと","音"],["ね","音"],["した","下"],["か","下"],["さ","下"],["ひ","火"],["か","火"],
+        ["はな","花"],["か","花"],["かい","貝"],["まな","学"],["がく","学"],["き","気"],["け","気"],["きゅう","九"],
+        ["ここの","九"],["やす","休"],["きゅう","休"],["たま","玉"],["ぎょく","玉"],["かね","金"],["きん","金"],
+        ["そら","空"],["くう","空"],["つき","月"],["げつ","月"],["がつ","月"],["いぬ","犬"],["けん","犬"],["み","見"],
+        ["けん","見"],["ご","五"],["いつ","五"],["くち","口"],["こう","口"],["こう","校"],["ひだり","左"],["さ","左"],
+        ["さん","三"],["み","三"],["やま","山"],["さん","山"],["こ","子"],["し","子"],["よん","四"],["し","四"],["よ","四"],
+        ["いと","糸"],["し","糸"],["じ","字"],["みみ","耳"],["じ","耳"],["しち","七"],["なな","七"],["くるま","車"],
+        ["しゃ","車"],["て","手"],["しゅ","手"],["じゅう","十"],["とお","十"],["で","出"],["だ","出"],["しゅつ","出"],
+        ["おんな","女"],["じょ","女"],["ちい","小"],["しょう","小"],["うえ","上"],["じょう","上"],["あ","上"],["のぼ","上"],
+        ["もり","森"],["しん","森"],["ひと","人"],["じん","人"],["にん","人"],["みず","水"],["すい","水"],["ただ","正"],
+        ["せい","正"],["しょう","正"],["い","生"],["う","生"],["なま","生"],["せい","生"],["しょう","生"],["あお","青"],
+        ["せい","青"],["ゆう","夕"],["せき","石"],["いし","石"],["あか","赤"],["せき","赤"],["せん","千"],["ち","千"],
+        ["かわ","川"],["せん","川"],["さき","先"],["せん","先"],["はや","早"],["そう","早"],["くさ","草"],["そう","草"],
+        ["あし","足"],["た","足"],["そく","足"],["むら","村"],["そん","村"],["おお","大"],["だい","大"],["たい","大"],
+        ["おとこ","男"],["だん","男"],["なん","男"],["たけ","竹"],["ちく","竹"],["なか","中"],["ちゅう","中"],["むし","虫"],
+        ["ちゅう","虫"],["まち","町"],["ちょう","町"],["てん","天"],["あま","天"],["た","田"],["でん","田"],["つち","土"],
+        ["ど","土"],["と","土"],["に","二"],["ふた","二"],["ひ","日"],["にち","日"],["じつ","日"],["はい","入"],["い","入"],
+        ["にゅう","入"],["とし","年"],["ねん","年"],["しろ","白"],["はく","白"],["はち","八"],["や","八"],["ひゃく","百"],
+        ["ぶん","文"],["もん","文"],["き","木"],["もく","木"],["ぼく","木"],["ほん","本"],["もと","本"],["な","名"],
+        ["めい","名"],["みょう","名"],["め","目"],["もく","目"],["た","立"],["りつ","立"],["ちから","力"],["りょく","力"],
+        ["りき","力"],["はやし","林"],["りん","林"],["ろく","六"],["む","六"],["とも","友"],["ゆう","友"],["はな","話"],
+        ["わ","話"],["き","聞"],["ぶん","聞"],["か","書"],["しょ","書"],["よ","読"],["どく","読"],["おも","思"],
+        ["し","思"],["かんが","考"],["こう","考"],["い","言"],["げん","言"],["ごん","言"],["つく","作"],["さく","作"],
+        ["つか","使"],["し","使"],["まな","習"],["しゅう","習"],["べん","勉"],["つよ","強"],["きょう","強"],["ごう","強"]
+      ];
+      for (const [y, c] of baseReadings) addYomi(y, [c]);
+    })();
+
     const IOS_KANA_LAYOUT = [
       { label: '→', sub: 'かくてい', chars: ['→'], func: true },
       { label: 'あ', sub: 'いうえお', chars: ['あ', 'い', 'う', 'え', 'お'] },
@@ -2616,39 +2791,39 @@
 
       { label: 'ABC', sub: 'えいじ', chars: ['ABC'], func: true },
       { label: 'ま', sub: 'みむめも', chars: ['ま', 'み', 'む', 'め', 'も'] },
-      { label: 'や', sub: '（）ゆよ', chars: ['や', '（', 'ゆ', '）', 'よ'] },
+      { label: 'や', sub: '（ゆ）よ', chars: ['や', '（', 'ゆ', '）', 'よ'] },
       { label: 'ら', sub: 'りるれろ', chars: ['ら', 'り', 'る', 'れ', 'ろ'] },
       { label: '⏎', sub: 'かいぎょう', chars: ['⏎'], func: true, rowSpan: 2 },
 
       { label: '123', sub: 'すうじ', chars: ['123'], func: true },
       { label: '^^', sub: '゛゜小', chars: ['^^'], func: true },
       { label: 'わ', sub: 'をんー～', chars: ['わ', 'を', 'ん', 'ー', '～'] },
-      { label: '、。?!', sub: '？！・', chars: ['、', '。', '？', '！', '・'] }
+      { label: '、。?!', sub: 'くぎり', chars: ['、', '。', '？', '！', '・'] }
     ];
 
     const IOS_ALPHA_LAYOUT = [
       { label: '→', sub: 'かくてい', chars: ['→'], func: true },
-      { label: '@#/_', sub: '&', chars: ['@', '#', '/', '_', '&'] },
-      { label: 'ABC', sub: '2', chars: ['a', 'b', 'c', '2'] },
-      { label: 'DEF', sub: '3', chars: ['d', 'e', 'f', '3'] },
+      { label: '@#/_', sub: 'きごう', chars: ['@', '#', '/', '_', '&'] },
+      { label: 'ABC', sub: 'abc2', chars: ['a', 'b', 'c', '2'] },
+      { label: 'DEF', sub: 'def3', chars: ['d', 'e', 'f', '3'] },
       { label: '⌫', sub: 'けす', chars: ['⌫'], func: true },
 
       { label: 'a/A', sub: 'おお/こ', chars: ['a/A'], func: true },
-      { label: 'GHI', sub: '4', chars: ['g', 'h', 'i', '4'] },
-      { label: 'JKL', sub: '5', chars: ['j', 'k', 'l', '5'] },
-      { label: 'MNO', sub: '6', chars: ['m', 'n', 'o', '6'] },
+      { label: 'GHI', sub: 'ghi4', chars: ['g', 'h', 'i', '4'] },
+      { label: 'JKL', sub: 'jkl5', chars: ['j', 'k', 'l', '5'] },
+      { label: 'MNO', sub: 'mno6', chars: ['m', 'n', 'o', '6'] },
       { label: '空白', sub: 'スペース', chars: ['空白'], func: true },
 
       { label: 'あいう', sub: 'かな', chars: ['あいう'], func: true },
-      { label: 'PQRS', sub: '7', chars: ['p', 'q', 'r', 's', '7'] },
-      { label: 'TUV', sub: '8', chars: ['t', 'u', 'v', '8'] },
-      { label: 'WXYZ', sub: '9', chars: ['w', 'x', 'y', 'z', '9'] },
+      { label: 'PQRS', sub: 'pqrs7', chars: ['p', 'q', 'r', 's', '7'] },
+      { label: 'TUV', sub: 'tuv8', chars: ['t', 'u', 'v', '8'] },
+      { label: 'WXYZ', sub: 'wxyz9', chars: ['w', 'x', 'y', 'z', '9'] },
       { label: '⏎', sub: 'かいぎょう', chars: ['⏎'], func: true, rowSpan: 2 },
 
       { label: '123', sub: 'すうじ', chars: ['123'], func: true },
       { label: '\'":;', sub: 'きごう', chars: ['\'', '"', ':', ';'] },
-      { label: '0-+=', sub: 'きごう', chars: ['0', '-', '+', '='] },
-      { label: '.,?!', sub: 'きごう', chars: ['.', ',', '?', '!'] }
+      { label: '0-+=', sub: 'すうじ', chars: ['0', '-', '+', '='] },
+      { label: '.,?!', sub: 'くぎり', chars: ['.', ',', '?', '!'] }
     ];
 
     const IOS_NUM_LAYOUT = [
@@ -2673,7 +2848,7 @@
       { label: 'ABC', sub: 'えいじ', chars: ['ABC'], func: true },
       { label: '*#+', sub: 'きごう', chars: ['*', '#', '+'] },
       { label: '0', sub: '〜ー=', chars: ['0', '〜', 'ー', '='] },
-      { label: '.,/!', sub: 'きごう', chars: ['.', ',', '/', '!'] }
+      { label: '.,/!', sub: 'くぎり', chars: ['.', ',', '/', '!'] }
     ];
 
     // 濁点・半濁点・小文字サイクルマップ
@@ -2708,6 +2883,10 @@
       toggleCount: 0,
       toggleTimer: null,
       lastCommittedChar: "",
+      panelComposing: false,
+      composingStartPos: null,
+      candidateIndex: -1,
+      activeCandidates: [],
       reflectionRatings: [null, null, null, null],
       reflectionText: "",
       thoughtChange: "",
@@ -2756,7 +2935,6 @@
       document.getElementById('btn-back-top').textContent = ui.backTop;
       document.getElementById('themes-grade-badge').textContent = ui.name;
       document.getElementById('themes-page-title').textContent = ui.themesTitle;
-      document.getElementById('random-btn-label').textContent = ui.randomBtn;
 
       // 3ページ目ヘッダー・タブ
       document.getElementById('ws-back-themes-btn').textContent = ui.backThemes;
@@ -2823,9 +3001,6 @@
       document.getElementById('s6-write-title').textContent = ui.s6WriteTitle;
       document.getElementById('s6-write-hint').textContent = ui.s6WriteHint;
       document.getElementById('reflection-textarea').placeholder = ui.s6Placeholder;
-      document.getElementById('s6-change-label').textContent = ui.s6ChangeLabel;
-      document.getElementById('tc-btn-1').textContent = ui.s6Change1;
-      document.getElementById('tc-btn-2').textContent = ui.s6Change2;
       document.getElementById('s6-prev-btn').textContent = ui.s6Prev;
       document.getElementById('s6-other-theme-btn').textContent = ui.s6OtherTheme;
       document.getElementById('s6-finish-btn').textContent = ui.s6FinishBtn;
@@ -2911,7 +3086,6 @@
 
       document.getElementById('reflection-textarea').value = "";
       renderReflectionCriteria();
-      updateThoughtChangeButtons();
 
       updateStanceUI();
       setSpeechTimerPreset(60);
@@ -3604,9 +3778,14 @@
         if (item.sub) {
           const subLabel = document.createElement('span');
           subLabel.className = 'text-[8.5px] font-medium text-slate-500 mt-0.5 tracking-tighter leading-none whitespace-nowrap';
-          subLabel.textContent = (state.inputMode === 1 && !item.func && state.isUpperCase)
-            ? item.sub.toUpperCase()
-            : item.sub;
+          if (item.label === '⏎') {
+            subLabel.id = 'ios-enter-sub-label';
+            subLabel.textContent = state.panelComposing ? 'かくてい' : 'かいぎょう';
+          } else {
+            subLabel.textContent = (state.inputMode === 1 && !item.func && state.isUpperCase)
+              ? item.sub.toUpperCase()
+              : item.sub;
+          }
           keyEl.appendChild(subLabel);
         }
 
@@ -3721,22 +3900,81 @@
       }, { passive: false });
     }
 
+    function setPanelComposing(flag) {
+      state.panelComposing = flag;
+      const enterSub = document.getElementById('ios-enter-sub-label');
+      if (enterSub) {
+        enterSub.textContent = flag ? 'かくてい' : 'かいぎょう';
+      }
+      if (!flag) {
+        state.composingStartPos = null;
+        state.candidateIndex = -1;
+        state.activeCandidates = [];
+        const listEl = document.getElementById('kanji-candidates-list');
+        if (listEl) {
+          listEl.innerHTML = `<span class="text-[10px] text-slate-400">${state.grade}年生の かんじへんかん</span>`;
+        }
+      }
+    }
+
+    function getCurrentTargetCursorPos() {
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        return nameInput ? (nameInput.selectionStart ?? nameInput.value.length) : 0;
+      }
+      if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        return refInput ? (refInput.selectionStart ?? refInput.value.length) : 0;
+      }
+      return state.cursorIndex;
+    }
+
+    function ensureComposingStarted() {
+      const curPos = getCurrentTargetCursorPos();
+      if (!state.panelComposing || state.composingStartPos === null || state.composingStartPos > curPos) {
+        state.composingStartPos = curPos;
+      }
+      setPanelComposing(true);
+    }
+
     function processIosKeyInput(index, item, dir) {
       const label = item.label;
       const modeIndicator = document.getElementById('ios-mode-indicator');
 
       if (item.func) {
         if (label === '⌫') {
+          state.candidateIndex = -1;
           deleteBackwardAtCursor();
           resetIosToggle();
         } else if (label === '空白') {
-          insertTextAtCursor(state.inputMode === 0 ? '　' : ' ');
           resetIosToggle();
+          if (state.panelComposing && state.activeCandidates.length > 0) {
+            state.candidateIndex = (state.candidateIndex + 1) % state.activeCandidates.length;
+            updateKanjiCandidates();
+          } else {
+            setPanelComposing(false);
+            insertTextAtCursor(state.inputMode === 0 ? '　' : ' ');
+          }
         } else if (label === '⏎') {
-          insertNewlineAtCursor();
           resetIosToggle();
+          if (state.panelComposing) {
+            if (state.candidateIndex >= 0 && state.activeCandidates[state.candidateIndex]) {
+              const cand = state.activeCandidates[state.candidateIndex];
+              applyKanjiConversion(cand.yomiLen, cand.word, cand.offsetFromCursor || 0);
+            } else {
+              setPanelComposing(false);
+            }
+          } else {
+            insertNewlineAtCursor();
+          }
         } else if (label === '→') {
           resetIosToggle();
+          if (state.panelComposing && state.candidateIndex >= 0 && state.activeCandidates[state.candidateIndex]) {
+            const cand = state.activeCandidates[state.candidateIndex];
+            applyKanjiConversion(cand.yomiLen, cand.word, cand.offsetFromCursor || 0);
+          } else {
+            setPanelComposing(false);
+          }
         } else if (label === 'ABC') {
           state.inputMode = 1;
           if (modeIndicator) modeIndicator.textContent = '英字（ABC）';
@@ -3758,6 +3996,11 @@
         } else if (label === '^^') {
           const converted = MOD_CYCLE_MAP[state.lastCommittedChar];
           if (converted) {
+            if (!state.panelComposing) {
+              const curPos = getCurrentTargetCursorPos();
+              state.composingStartPos = Math.max(0, curPos - 1);
+            }
+            setPanelComposing(true);
             replacePrevChar(converted);
             state.lastCommittedChar = converted;
           }
@@ -3770,6 +4013,11 @@
             state.toggleCount = (state.toggleCount - 1 + chars.length) % chars.length;
             let ch = chars[state.toggleCount];
             if (state.inputMode === 1 && state.isUpperCase) ch = ch.toUpperCase();
+            if (!state.panelComposing) {
+              const curPos = getCurrentTargetCursorPos();
+              state.composingStartPos = Math.max(0, curPos - 1);
+            }
+            setPanelComposing(true);
             replacePrevChar(ch);
             state.lastCommittedChar = ch;
           }
@@ -3778,15 +4026,22 @@
       }
 
       if (state.toggleTimer) clearTimeout(state.toggleTimer);
+      state.candidateIndex = -1;
 
       if (dir === 0) {
         if (state.lastKeyIndex === index) {
           state.toggleCount = (state.toggleCount + 1) % item.chars.length;
           let ch = item.chars[state.toggleCount];
           if (state.inputMode === 1 && state.isUpperCase) ch = ch.toUpperCase();
+          if (!state.panelComposing) {
+            const curPos = getCurrentTargetCursorPos();
+            state.composingStartPos = Math.max(0, curPos - 1);
+          }
+          setPanelComposing(true);
           replacePrevChar(ch);
           state.lastCommittedChar = ch;
         } else {
+          ensureComposingStarted();
           state.toggleCount = 0;
           let ch = item.chars[0];
           if (state.inputMode === 1 && state.isUpperCase) ch = ch.toUpperCase();
@@ -3798,6 +4053,7 @@
           resetIosToggle();
         }, 850);
       } else {
+        ensureComposingStarted();
         resetIosToggle();
         let ch = (dir < item.chars.length) ? item.chars[dir] : item.chars[0];
         if (state.inputMode === 1 && state.isUpperCase) ch = ch.toUpperCase();
@@ -3901,6 +4157,9 @@
       if (state.cursorIndex === 0) return;
       state.essayText = state.essayText.slice(0, state.cursorIndex - 1) + state.essayText.slice(state.cursorIndex);
       state.cursorIndex--;
+      if (state.composingStartPos !== null && state.cursorIndex <= state.composingStartPos) {
+        setPanelComposing(false);
+      }
       renderGenkouyoushi();
       updateKanjiCandidates();
     }
@@ -3912,6 +4171,86 @@
     }
 
     /**
+     * 送り仮名・活用形を自動展開する語幹ルール（大きい・大きな・大きく・大きかった 等）
+     */
+    const OKURIGANA_STEMS = [
+      // イ形容詞（〜い / 〜な / 〜く / 〜かった / 〜さ / 〜み）
+      { yomiStem: "おおき", kanjiStem: "大き", g: 1, forms: ["い", "な", "く", "かった", "さ", "くて", "ければ"] },
+      { yomiStem: "ちいさ", kanjiStem: "小さ", g: 1, forms: ["い", "な", "く", "かった", "さ", "くて"] },
+      { yomiStem: "ただ", kanjiStem: "正", g: 1, forms: ["しい", "しく", "しかった", "しさ", "す", "した"] },
+      { yomiStem: "はや", kanjiStem: "早", g: 1, forms: ["い", "く", "かった", "さ", "める", "まる"] },
+      { yomiStem: "はや", kanjiStem: "速", g: 3, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "しろ", kanjiStem: "白", g: 1, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "あか", kanjiStem: "赤", g: 1, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "あお", kanjiStem: "青", g: 1, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "おお", kanjiStem: "多", g: 2, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "すくな", kanjiStem: "少な", g: 2, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "なが", kanjiStem: "長", g: 2, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "みじか", kanjiStem: "短", g: 3, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "たか", kanjiStem: "高", g: 2, forms: ["い", "く", "かった", "さ", "める", "まる"] },
+      { yomiStem: "ひく", kanjiStem: "低", g: 4, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "ひろ", kanjiStem: "広", g: 2, forms: ["い", "く", "かった", "さ", "める", "がる"] },
+      { yomiStem: "つよ", kanjiStem: "強", g: 2, forms: ["い", "く", "かった", "さ", "める", "まる"] },
+      { yomiStem: "よわ", kanjiStem: "弱", g: 2, forms: ["い", "く", "かった", "さ", "める", "まる"] },
+      { yomiStem: "あたら", kanjiStem: "新", g: 2, forms: ["しい", "しく", "しかった", "しさ", "たな", "たに"] },
+      { yomiStem: "ふる", kanjiStem: "古", g: 2, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "たの", kanjiStem: "楽", g: 2, forms: ["しい", "しく", "しかった", "しさ", "しむ", "しみます", "しんだ", "しみ"] },
+      { yomiStem: "かる", kanjiStem: "軽", g: 3, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "おも", kanjiStem: "重", g: 3, forms: ["い", "く", "かった", "さ", "ねる"] },
+      { yomiStem: "あつ", kanjiStem: "暑", g: 3, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "さむ", kanjiStem: "寒", g: 3, forms: ["い", "く", "かった", "さ"] },
+      { yomiStem: "やさ", kanjiStem: "優", g: 6, forms: ["しい", "しく", "しかった", "しさ"] },
+      { yomiStem: "むずか", kanjiStem: "難", g: 6, forms: ["しい", "しく", "しかった", "しさ"] },
+      { yomiStem: "あたた", kanjiStem: "暖", g: 6, forms: ["かい", "かく", "かかった", "かさ", "める", "まる"] },
+      { yomiStem: "すず", kanjiStem: "涼", g: 6, forms: ["しい", "しく", "しかった", "しさ"] },
+
+      // 動詞の多様な送り仮名（終止・連体・連用・ます・て・た・ない・よう）
+      { yomiStem: "み", kanjiStem: "見", g: 1, forms: ["る", "ます", "ました", "た", "て", "ない", "よう", "える", "せる"] },
+      { yomiStem: "で", kanjiStem: "出", g: 1, forms: ["る", "ます", "ました", "た", "て", "ない", "よう", "かける"] },
+      { yomiStem: "はい", kanjiStem: "入", g: 1, forms: ["る", "ります", "りました", "った", "って", "らない"] },
+      { yomiStem: "い", kanjiStem: "入", g: 1, forms: ["れる", "れます", "れました", "れた", "れて", "れない"] },
+      { yomiStem: "た", kanjiStem: "立", g: 1, forms: ["つ", "ちます", "ちました", "った", "って", "たない", "てる"] },
+      { yomiStem: "やす", kanjiStem: "休", g: 1, forms: ["む", "みます", "みました", "んだ", "んで", "まない", "み"] },
+      { yomiStem: "おも", kanjiStem: "思", g: 2, forms: ["う", "います", "いました", "った", "って", "わない", "い", "いだす", "いだした"] },
+      { yomiStem: "かんが", kanjiStem: "考", g: 2, forms: ["える", "えます", "えました", "えた", "えて", "えない", "え", "えよう"] },
+      { yomiStem: "い", kanjiStem: "言", g: 2, forms: ["う", "います", "いました", "った", "って", "わない", "える", "い方"] },
+      { yomiStem: "はな", kanjiStem: "話", g: 2, forms: ["す", "します", "しました", "した", "して", "さない", "し", "し合う", "し合い"] },
+      { yomiStem: "き", kanjiStem: "聞", g: 2, forms: ["く", "きます", "きました", "いた", "いて", "かない", "こえる", "き方"] },
+      { yomiStem: "か", kanjiStem: "書", g: 2, forms: ["く", "きます", "きました", "いた", "いて", "かない", "き方", "き直す"] },
+      { yomiStem: "よ", kanjiStem: "読", g: 2, forms: ["む", "みます", "みました", "んだ", "んで", "まない", "み方"] },
+      { yomiStem: "た", kanjiStem: "食", g: 2, forms: ["べる", "べます", "べました", "べた", "べて", "べない", "べ物"] },
+      { yomiStem: "の", kanjiStem: "飲", g: 3, forms: ["む", "みます", "みました", "んだ", "んで", "まない", "み物"] },
+      { yomiStem: "い", kanjiStem: "行", g: 2, forms: ["く", "きます", "きました", "った", "って", "かない", "こう"] },
+      { yomiStem: "く", kanjiStem: "来", g: 2, forms: ["る", "れば"] },
+      { yomiStem: "き", kanjiStem: "来", g: 2, forms: ["ます", "ました", "た", "て"] },
+      { yomiStem: "こ", kanjiStem: "来", g: 2, forms: ["ない", "よう"] },
+      { yomiStem: "かえ", kanjiStem: "帰", g: 2, forms: ["る", "ります", "りました", "った", "って", "らない"] },
+      { yomiStem: "つく", kanjiStem: "作", g: 2, forms: ["る", "ります", "りました", "った", "って", "らない", "り方"] },
+      { yomiStem: "つか", kanjiStem: "使", g: 3, forms: ["う", "います", "いました", "った", "って", "わない", "い方"] },
+      { yomiStem: "わ", kanjiStem: "分", g: 2, forms: ["ける", "けます", "けました", "けた", "けて", "かる", "かります", "かった", "からない"] },
+      { yomiStem: "し", kanjiStem: "知", g: 2, forms: ["る", "ります", "りました", "った", "って", "らない"] },
+      { yomiStem: "ちが", kanjiStem: "違", g: 4, forms: ["う", "います", "いました", "った", "って", "わない", "い"] },
+      { yomiStem: "まも", kanjiStem: "守", g: 3, forms: ["る", "ります", "りました", "った", "って", "らない"] },
+      { yomiStem: "き", kanjiStem: "決", g: 3, forms: ["める", "めます", "めました", "めた", "めて", "めない", "まる", "まった"] },
+      { yomiStem: "か", kanjiStem: "変", g: 4, forms: ["わる", "わります", "わりました", "わった", "わって", "える", "えます", "えた", "えて"] },
+      { yomiStem: "ふか", kanjiStem: "深", g: 3, forms: ["まる", "まりました", "まった", "める", "めました", "めた", "い", "く"] },
+      { yomiStem: "すす", kanjiStem: "進", g: 3, forms: ["む", "みます", "みました", "んだ", "んで", "める", "めます", "めた"] },
+      { yomiStem: "あつ", kanjiStem: "集", g: 3, forms: ["まる", "まりました", "まった", "める", "めます", "めた", "めて"] },
+      { yomiStem: "しら", kanjiStem: "調", g: 3, forms: ["べる", "べます", "べました", "べた", "べて", "べない"] },
+      { yomiStem: "たす", kanjiStem: "助", g: 3, forms: ["ける", "けます", "けました", "けた", "けて", "け合う", "け合い"] },
+      { yomiStem: "おぼ", kanjiStem: "覚", g: 4, forms: ["える", "えます", "えました", "えた", "えて", "えない"] },
+      { yomiStem: "つた", kanjiStem: "伝", g: 4, forms: ["える", "えます", "えました", "えた", "えて", "わる", "わります", "わった"] },
+      { yomiStem: "えら", kanjiStem: "選", g: 4, forms: ["ぶ", "びます", "びました", "んだ", "んで", "ばない", "び方"] },
+      { yomiStem: "つづ", kanjiStem: "続", g: 4, forms: ["く", "きます", "いた", "ける", "けます", "けました", "けた", "けて"] },
+      { yomiStem: "のこ", kanjiStem: "残", g: 4, forms: ["る", "ります", "った", "す", "します", "した"] },
+      { yomiStem: "ふ", kanjiStem: "増", g: 5, forms: ["える", "えます", "えました", "えた", "えて", "やす", "やした"] },
+      { yomiStem: "へ", kanjiStem: "減", g: 5, forms: ["る", "ります", "りました", "った", "らす", "らした"] },
+      { yomiStem: "くら", kanjiStem: "比", g: 5, forms: ["べる", "べます", "べました", "べた", "べて"] },
+      { yomiStem: "みと", kanjiStem: "認", g: 6, forms: ["める", "めます", "めました", "めた", "めて"] },
+      { yomiStem: "わす", kanjiStem: "忘", g: 6, forms: ["れる", "れます", "れました", "れた", "れて", "れない"] }
+    ];
+
+    /**
      * ひらがな→カタカナ変換ユーティリティ
      */
     function hiraToKata(str) {
@@ -3920,80 +4259,226 @@
 
     /**
      * 学年別漢字変換バーの候補更新
-     * 1年→g<=1、2年→g<=2、…6年→g<=6 の漢字・熟語とカタカナ候補を表示
+     * ・確定ボタン押下後は、その確定位置以降に新しく入力した文字のみを対象にする
+     * ・「大きい」「大きな」などの送り仮名・活用形にも対応
      */
     function updateKanjiCandidates() {
       const listEl = document.getElementById('kanji-candidates-list');
       if (!listEl) return;
 
-      let textBeforeCursor = "";
-      if (state.inputTarget === 'name') {
-        const nameInput = document.getElementById('student-name-input');
-        const pos = nameInput.selectionStart ?? nameInput.value.length;
-        textBeforeCursor = nameInput.value.slice(0, pos);
-      } else if (state.inputTarget === 'reflection') {
-        const refInput = document.getElementById('reflection-textarea');
-        const pos = refInput.selectionStart ?? refInput.value.length;
-        textBeforeCursor = refInput.value.slice(0, pos);
-      } else {
-        textBeforeCursor = state.essayText.slice(0, state.cursorIndex);
+      if (!state.panelComposing) {
+        state.activeCandidates = [];
+        listEl.innerHTML = `<span class="text-[10px] text-slate-400">${state.grade}年生の かんじへんかん</span>`;
+        return;
       }
 
-      // カーソル直前の連続するひらがな（最大8文字）を抽出
-      const match = textBeforeCursor.match(/([ぁ-んー]{1,8})$/);
+      let fullBeforeCursor = "";
+      let curPos = 0;
+      if (state.inputTarget === 'name') {
+        const nameInput = document.getElementById('student-name-input');
+        curPos = nameInput.selectionStart ?? nameInput.value.length;
+        fullBeforeCursor = nameInput.value.slice(0, curPos);
+      } else if (state.inputTarget === 'reflection') {
+        const refInput = document.getElementById('reflection-textarea');
+        curPos = refInput.selectionStart ?? refInput.value.length;
+        fullBeforeCursor = refInput.value.slice(0, curPos);
+      } else {
+        curPos = state.cursorIndex;
+        fullBeforeCursor = state.essayText.slice(0, curPos);
+      }
+
+      // 確定後の新規入力範囲だけを切り出す
+      const startBound = (state.composingStartPos !== null && state.composingStartPos <= curPos)
+        ? state.composingStartPos
+        : 0;
+      const activeSegment = fullBeforeCursor.slice(startBound);
+
+      // 未確定区間内の末尾にある連続ひらがな（最大12文字）を抽出
+      const match = activeSegment.match(/([ぁ-んー]{1,12})$/);
       if (!match) {
+        state.activeCandidates = [];
         listEl.innerHTML = `<span class="text-[10px] text-slate-400">${state.grade}年生の かんじへんかん</span>`;
         return;
       }
 
       const hiraTail = match[1];
-      const candidates = []; // { yomiLen, word, isKanji }
+      const candidates = []; // { yomiLen, offsetFromCursor, word, isKanji }
       const seen = new Set();
+      const allowedSet = getAllowedKanjiSetForGrade(state.grade);
 
-      // 長い読みから順にマッチング（例：「いちねんせい」「ひとつ」「いち」など）
-      for (let len = hiraTail.length; len >= 1; len--) {
-        const sub = hiraTail.slice(hiraTail.length - len);
+      // 0) 確定前に入力した文字全体の「まとめて変換」（例：「ふくざつな」→「複雑な」、「がっこうに」→「学校に」）
+      for (let stemLen = hiraTail.length - 1; stemLen >= 1; stemLen--) {
+        const stemYomi = hiraTail.slice(0, stemLen);
+        const suffixKana = hiraTail.slice(stemLen);
+
         for (const entry of KANJI_DICT) {
-          if (entry.g <= state.grade && entry.yomi === sub) {
-            const key = `${len}:${entry.word}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              candidates.push({ yomiLen: len, word: entry.word, isKanji: true });
+          if (entry.g <= state.grade && entry.yomi === stemYomi) {
+            const combinedWord = entry.word + suffixKana;
+            if (isWordAllowedForGrade(combinedWord, state.grade)) {
+              const key = `${hiraTail.length}:0:${combinedWord}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                candidates.push({ yomiLen: hiraTail.length, offsetFromCursor: 0, word: combinedWord, isKanji: true });
+              }
+            }
+          }
+        }
+
+        for (const stem of OKURIGANA_STEMS) {
+          if (stem.g <= state.grade && stemYomi.startsWith(stem.yomiStem)) {
+            const okuri = stemYomi.slice(stem.yomiStem.length);
+            if (stem.forms.includes(okuri)) {
+              const combinedWord = stem.kanjiStem + okuri + suffixKana;
+              if (isWordAllowedForGrade(combinedWord, state.grade)) {
+                const key = `${hiraTail.length}:0:${combinedWord}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  candidates.push({ yomiLen: hiraTail.length, offsetFromCursor: 0, word: combinedWord, isKanji: true });
+                }
+              }
             }
           }
         }
       }
 
-      // カタカナ候補も追加（2文字以上または全体）
-      const kataWhole = hiraToKata(hiraTail);
-      if (kataWhole !== hiraTail && !seen.has(`${hiraTail.length}:${kataWhole}`)) {
-        candidates.push({ yomiLen: hiraTail.length, word: kataWhole, isKanji: false });
+      // 1) 文節先頭側からの一致（例：「がっこうに」→「学校」＋残りの「に」を継続入力可能）
+      for (let len = hiraTail.length; len >= 1; len--) {
+        const prefixSub = hiraTail.slice(0, len);
+        const offsetFromCursor = hiraTail.length - len;
+
+        for (const entry of KANJI_DICT) {
+          if (entry.g <= state.grade && entry.yomi === prefixSub && isWordAllowedForGrade(entry.word, state.grade)) {
+            const key = `${len}:${offsetFromCursor}:${entry.word}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              candidates.push({ yomiLen: len, offsetFromCursor, word: entry.word, isKanji: true });
+            }
+          }
+        }
+
+        for (const stem of OKURIGANA_STEMS) {
+          if (stem.g <= state.grade && prefixSub.startsWith(stem.yomiStem)) {
+            const okuri = prefixSub.slice(stem.yomiStem.length);
+            if (stem.forms.includes(okuri)) {
+              const convertedWord = stem.kanjiStem + okuri;
+              if (isWordAllowedForGrade(convertedWord, state.grade)) {
+                const key = `${len}:${offsetFromCursor}:${convertedWord}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  candidates.push({ yomiLen: len, offsetFromCursor, word: convertedWord, isKanji: true });
+                }
+              }
+            }
+          }
+        }
+
+        // 学年配当漢字1,026字の単漢字音訓マッチ
+        if (ALL_CHAR_BY_YOMI[prefixSub]) {
+          for (const ch of ALL_CHAR_BY_YOMI[prefixSub]) {
+            if (allowedSet.has(ch)) {
+              const key = `${len}:${offsetFromCursor}:${ch}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                candidates.push({ yomiLen: len, offsetFromCursor, word: ch, isKanji: true });
+              }
+            }
+          }
+        }
       }
 
-      if (candidates.length === 0) {
+      // 2) 末尾側からの一致（助詞のあとの単語を変換したい場合）
+      for (let len = hiraTail.length - 1; len >= 1; len--) {
+        const suffixSub = hiraTail.slice(hiraTail.length - len);
+
+        for (const entry of KANJI_DICT) {
+          if (entry.g <= state.grade && entry.yomi === suffixSub && isWordAllowedForGrade(entry.word, state.grade)) {
+            const key = `${len}:0:${entry.word}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              candidates.push({ yomiLen: len, offsetFromCursor: 0, word: entry.word, isKanji: true });
+            }
+          }
+        }
+
+        for (const stem of OKURIGANA_STEMS) {
+          if (stem.g <= state.grade && suffixSub.startsWith(stem.yomiStem)) {
+            const okuri = suffixSub.slice(stem.yomiStem.length);
+            if (stem.forms.includes(okuri)) {
+              const convertedWord = stem.kanjiStem + okuri;
+              if (isWordAllowedForGrade(convertedWord, state.grade)) {
+                const key = `${len}:0:${convertedWord}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  candidates.push({ yomiLen: len, offsetFromCursor: 0, word: convertedWord, isKanji: true });
+                }
+              }
+            }
+          }
+        }
+
+        if (ALL_CHAR_BY_YOMI[suffixSub]) {
+          for (const ch of ALL_CHAR_BY_YOMI[suffixSub]) {
+            if (allowedSet.has(ch)) {
+              const key = `${len}:0:${ch}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                candidates.push({ yomiLen: len, offsetFromCursor: 0, word: ch, isKanji: true });
+              }
+            }
+          }
+        }
+      }
+
+      // カタカナ候補も追加
+      const kataWhole = hiraToKata(hiraTail);
+      if (kataWhole !== hiraTail && !seen.has(`${hiraTail.length}:0:${kataWhole}`)) {
+        candidates.push({ yomiLen: hiraTail.length, offsetFromCursor: 0, word: kataWhole, isKanji: false });
+      }
+
+      // ひらがなのまま候補も末尾に用意（空白キーで元のひらがなに戻せるようにする）
+      candidates.push({ yomiLen: hiraTail.length, offsetFromCursor: 0, word: hiraTail, isKanji: false });
+
+      state.activeCandidates = candidates.slice(0, 9);
+
+      if (state.activeCandidates.length <= 1) {
         listEl.innerHTML = `<span class="text-[10px] text-slate-400">「${escapeHtml(hiraTail)}」</span>`;
         return;
       }
 
-      listEl.innerHTML = candidates.slice(0, 8).map(c => `
-        <button type="button" onclick="applyKanjiConversion(${c.yomiLen}, '${c.word.replace(/'/g, "\\'")}')"
-          class="flex-shrink-0 px-2 py-0.5 rounded-lg font-maru font-bold text-xs border transition-colors cursor-pointer ${c.isKanji ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-slate-900' : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-sky-900'}">
-          ${escapeHtml(c.word)}
-        </button>
-      `).join('');
+      listEl.innerHTML = state.activeCandidates.map((c, idx) => {
+        const isSelected = idx === state.candidateIndex;
+        const baseCls = isSelected
+          ? 'bg-blue-600 border-blue-700 text-white shadow-2xs'
+          : (c.isKanji ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-slate-900' : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-sky-900');
+        return `
+          <button type="button" onclick="applyKanjiConversion(${c.yomiLen}, '${c.word.replace(/'/g, "\\'")}', ${c.offsetFromCursor || 0})"
+            class="flex-shrink-0 px-2 py-0.5 rounded-lg font-maru font-bold text-xs border transition-colors cursor-pointer ${baseCls}">
+            ${escapeHtml(c.word)}
+          </button>
+        `;
+      }).join('');
     }
 
-    function applyKanjiConversion(yomiLen, replacement) {
+    function applyKanjiConversion(yomiLen, replacement, offsetFromCursor = 0) {
       resetIosToggle();
+      state.candidateIndex = -1;
+      const keepComposing = offsetFromCursor > 0;
+
       if (state.inputTarget === 'name') {
         const nameInput = document.getElementById('student-name-input');
         const pos = nameInput.selectionStart ?? nameInput.value.length;
-        const start = Math.max(0, pos - yomiLen);
-        const nextVal = nameInput.value.slice(0, start) + replacement + nameInput.value.slice(pos);
+        const targetEnd = Math.max(0, pos - offsetFromCursor);
+        const start = Math.max(0, targetEnd - yomiLen);
+        const nextVal = nameInput.value.slice(0, start) + replacement + nameInput.value.slice(targetEnd);
         nameInput.value = nextVal;
-        const nextPos = start + replacement.length;
+        const nextPos = start + replacement.length + offsetFromCursor;
         nameInput.setSelectionRange(nextPos, nextPos);
         state.studentName = nextVal;
+        if (keepComposing) {
+          state.composingStartPos = start + replacement.length;
+        } else {
+          setPanelComposing(false);
+        }
         updateNameDisplays();
         updateKanjiCandidates();
         return;
@@ -4002,19 +4487,31 @@
       if (state.inputTarget === 'reflection') {
         const refInput = document.getElementById('reflection-textarea');
         const pos = refInput.selectionStart ?? refInput.value.length;
-        const start = Math.max(0, pos - yomiLen);
-        const nextVal = refInput.value.slice(0, start) + replacement + refInput.value.slice(pos);
+        const targetEnd = Math.max(0, pos - offsetFromCursor);
+        const start = Math.max(0, targetEnd - yomiLen);
+        const nextVal = refInput.value.slice(0, start) + replacement + refInput.value.slice(targetEnd);
         refInput.value = nextVal;
-        const nextPos = start + replacement.length;
+        const nextPos = start + replacement.length + offsetFromCursor;
         refInput.setSelectionRange(nextPos, nextPos);
         state.reflectionText = nextVal;
+        if (keepComposing) {
+          state.composingStartPos = start + replacement.length;
+        } else {
+          setPanelComposing(false);
+        }
         updateKanjiCandidates();
         return;
       }
 
-      const start = Math.max(0, state.cursorIndex - yomiLen);
-      state.essayText = state.essayText.slice(0, start) + replacement + state.essayText.slice(state.cursorIndex);
-      state.cursorIndex = start + replacement.length;
+      const targetEnd = Math.max(0, state.cursorIndex - offsetFromCursor);
+      const start = Math.max(0, targetEnd - yomiLen);
+      state.essayText = state.essayText.slice(0, start) + replacement + state.essayText.slice(targetEnd);
+      state.cursorIndex = start + replacement.length + offsetFromCursor;
+      if (keepComposing) {
+        state.composingStartPos = start + replacement.length;
+      } else {
+        setPanelComposing(false);
+      }
       renderGenkouyoushi();
       updateKanjiCandidates();
     }
@@ -4434,30 +4931,31 @@
     function updateThoughtChangeButtons() {
       const b1 = document.getElementById('tc-btn-1');
       const b2 = document.getElementById('tc-btn-2');
+      if (!b1 || !b2) return;
       const accent = GRADE_UI[state.grade].accent;
-
-      [b1, b2].forEach(b => {
-        b.style.backgroundColor = "#F8FAFC";
-        b.style.color = "#334155";
-        b.style.borderColor = "#CBD5E1";
-      });
-
       if (state.thoughtChange === 'deep') {
         b1.style.backgroundColor = accent;
-        b1.style.color = "#FFFFFF";
+        b1.style.color = '#FFFFFF';
         b1.style.borderColor = accent;
-      } else if (state.thoughtChange === 'changed') {
+      } else {
+        b1.style.backgroundColor = '#FFFFFF';
+        b1.style.color = '#334155';
+        b1.style.borderColor = '#CBD5E1';
+      }
+      if (state.thoughtChange === 'changed') {
         b2.style.backgroundColor = accent;
-        b2.style.color = "#FFFFFF";
+        b2.style.color = '#FFFFFF';
         b2.style.borderColor = accent;
+      } else {
+        b2.style.backgroundColor = '#FFFFFF';
+        b2.style.color = '#334155';
+        b2.style.borderColor = '#CBD5E1';
       }
     }
 
-    /**
-     * 「まとめシートをほぞん」ボタン：まとめシート画面を表示し、同時にPNG画像として自動ダウンロード保存
-     */
     function saveAndOpenSummarySheet() {
-      state.reflectionText = document.getElementById('reflection-textarea').value;
+      const refEl = document.getElementById('reflection-textarea');
+      if (refEl) state.reflectionText = refEl.value;
       renderSummarySheetModal();
       document.getElementById('summary-modal').classList.remove('hidden');
       downloadSummaryPng();
@@ -4472,22 +4970,18 @@
         ? `A：${themeObj.stanceA}`
         : (state.stance === 'B' ? `B：${themeObj.stanceB}` : ui.stanceUnset);
 
-      const changeText = state.thoughtChange === 'deep'
-        ? ui.s6Change1
-        : (state.thoughtChange === 'changed' ? ui.s6Change2 : "－");
-
-      // 原稿用紙のマス目（使用行数に応じて最小10行〜必要行数）
       const cols = 20;
       const { cells, usedCount } = formatTextToCells(state.essayText, state.paperSize, cols);
       const displayRows = Math.max(10, Math.min(state.paperSize / cols, Math.ceil(Math.max(1, usedCount) / cols)));
-      const displayCells = cells.slice(0, displayRows * cols);
+      const displayCount = displayRows * cols;
 
       const genkouHtml = `
         <div class="genkou-grid w-full">
-          ${displayCells.map((c, idx) => {
+          ${cells.slice(0, displayCount).map((cell, idx) => {
+            const isLastCol = (idx + 1) % cols === 0;
             const rowNum = Math.floor(idx / cols) + 1;
-            const isBlockEnd = rowNum % 5 === 0 && rowNum < displayRows;
-            return `<div class="genkou-cell print-genkou-cell text-[12px] sm:text-[13px] ${isBlockEnd ? 'row-sep' : ''}">${escapeHtml(c.ch)}</div>`;
+            const isBlockEnd = rowNum % 5 === 0 && rowNum * cols < displayCount;
+            return `<div class="genkou-cell print-genkou-cell text-[10px] sm:text-xs ${isLastCol ? 'bg-red-50/30' : ''} ${isBlockEnd ? 'row-sep' : ''}">${escapeHtml(cell.ch)}</div>`;
           }).join('')}
         </div>
       `;
@@ -4499,16 +4993,16 @@
       const lblCheck = g <= 3 ? "めあての チェック" : "めあての自己評価";
       const lblRef = g <= 3 ? "ふりかえり" : "振り返り";
 
-      const modalBody = document.getElementById('summary-modal-body');
-      modalBody.innerHTML = `
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-          <div class="sm:col-span-2">
-            <div class="text-xs font-bold text-slate-500">${ui.name} ／ ${lblTheme}</div>
-            <div class="font-maru font-black text-base sm:text-lg text-slate-900 mt-0.5">${themeObj.title}</div>
+      const body = document.getElementById('summary-modal-body');
+      body.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
+          <div class="min-w-0 flex-grow">
+            <div class="text-xs font-bold text-slate-500">${lblTheme}（${ui.name}）</div>
+            <div class="font-maru font-black text-base sm:text-lg text-slate-900">${escapeHtml(themeObj.title)}</div>
           </div>
-          <div class="flex flex-col justify-center bg-white px-3 py-1.5 rounded-xl border border-slate-200">
-            <div class="text-[11px] font-bold text-slate-400">${lblName}</div>
-            <div class="font-maru font-black text-base text-slate-900">${escapeHtml(nameStr)}</div>
+          <div class="bg-white px-3.5 py-1.5 rounded-xl border border-slate-300 flex-shrink-0">
+            <span class="text-xs font-bold text-slate-500 mr-1">${lblName}：</span>
+            <span class="font-maru font-black text-sm sm:text-base text-slate-900">${escapeHtml(nameStr)}</span>
           </div>
         </div>
 
@@ -4516,10 +5010,6 @@
           <div>
             <span class="text-xs font-bold text-slate-500 mr-2">${lblStance}：</span>
             <span class="font-maru font-black text-sm sm:text-base text-slate-900">${stanceText}</span>
-          </div>
-          <div>
-            <span class="text-xs font-bold text-slate-500 mr-1">${ui.s6ChangeLabel}</span>
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900">${changeText}</span>
           </div>
         </div>
 
@@ -4665,7 +5155,7 @@
       ctx.fillStyle = "#0F172A";
       ctx.font = "900 20px 'Noto Sans JP', sans-serif";
       ctx.fillText(`🌟 ${g <= 3 ? "めあての チェック" : "めあての自己評価"}`, pad, y);
-      ctx.fillText(`✏️ ${g <= 3 ? "ふりかえり" : "振り返り"}（${changeText}）`, W / 2 + 10, y);
+      ctx.fillText(`✏️ ${g <= 3 ? "ふりかえり" : "振り返り"}`, W / 2 + 10, y);
 
       y += 14;
       ctx.font = "600 16px 'Noto Sans JP', sans-serif";
